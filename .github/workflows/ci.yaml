@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  - push
+  - pull_request
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - nvim: nightly/nvim-linux64.tar.gz
+          - nvim: v0.9.5/nvim-linux64.tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Packages
+        run: |
+          set -xe
+
+          sudo apt-get update -qq
+          sudo apt-get install -qy ripgrep
+
+          mkdir -p .cache/neovim
+          curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.nvim }}" \
+            | tar -xzf - --strip-components=1 -C .cache/neovim
+
+
+      - name: Run Tests
+        run: |
+          set -xe
+
+          PATH="$PWD/.cache/neovim/bin:$PATH"
+
+          make all
