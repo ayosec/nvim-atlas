@@ -8,7 +8,7 @@ export PLENARY
 
 
 .PHONY: all
-all: test
+all: test fmt-check
 
 $(CACHE_DIR):
 	mkdir -p $@
@@ -30,3 +30,11 @@ test: | $(PLENARY)
 		--headless \
 		-u tests/init.lua \
 		-c "PlenaryBustedDirectory tests/specs { minimal_init = './tests/init.lua' }"
+
+.PHONY: fmt
+fmt:
+	stylua lua tests
+
+.PHONY: fmt-check
+fmt-check:
+	stylua --check lua tests

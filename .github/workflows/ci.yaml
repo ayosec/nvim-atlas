@@ -24,13 +24,19 @@ jobs:
         run: |
           set -xe
 
+          # Ripgrep
           sudo apt-get update -qq
           sudo apt-get install -qy ripgrep
 
+          # Neovim
           mkdir -p .cache/neovim
           curl -sL "https://github.com/neovim/neovim/releases/download/${{ matrix.nvim }}" \
             | tar -xzf - --strip-components=1 -C .cache/neovim
 
+          # Stylua
+          wget -qO /tmp/stylua.zip \
+            https://github.com/JohnnyMorganz/StyLua/releases/download/v0.20.0/stylua-linux-x86_64.zip
+          sudo unzip -d /usr/local/bin /tmp/stylua.zip
 
       - name: Run Tests
         run: |
