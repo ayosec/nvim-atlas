@@ -1,0 +1,11 @@
+{
+    "runtime.version": "LuaJIT",
+
+    "diagnostics.globals": [
+        "after_each",
+        "before_each",
+        "describe",
+        "it",
+        "vim"
+    ]
+}

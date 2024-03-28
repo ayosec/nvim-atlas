@@ -33,7 +33,7 @@ test: | $(PLENARY)
 
 .PHONY: lint
 lint:
-	luacheck lua tests
+	luacheck lua tests --globals vim
 
 .PHONY: fmt
 fmt:

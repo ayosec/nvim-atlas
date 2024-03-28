@@ -1,16 +1,17 @@
-local filters = require("atlas.filters")
+local parser = require("atlas.filter_parser")
 
+---@diagnostic disable-next-line:undefined-field
 local assert_eq = assert.are.same
 
-describe("Filters", function()
-    it("parse simple specifiers", function()
-        local specs = filters.parse("foo bar")
+describe("Filter Parser", function()
+    it("simple specifiers", function()
+        local specs = parser.parse("foo bar")
 
-        assert_eq(specs[1].kind, filters.FilterKind.Simple)
+        assert_eq(specs[1].kind, parser.FilterKind.Simple)
         assert_eq(specs[1].negated, false)
         assert_eq(specs[1].value, "foo")
 
-        assert_eq(specs[2].kind, filters.FilterKind.Simple)
+        assert_eq(specs[2].kind, parser.FilterKind.Simple)
         assert_eq(specs[2].negated, false)
         assert_eq(specs[2].value, "bar")
 
@@ -18,7 +19,7 @@ describe("Filters", function()
     end)
 
     it("ignore spaces", function()
-        local specs = filters.parse("foo   bar  ")
+        local specs = parser.parse("foo   bar  ")
 
         assert_eq(specs[1].value, "foo")
         assert_eq(specs[2].value, "bar")
@@ -26,24 +27,24 @@ describe("Filters", function()
     end)
 
     it("adjust regexs", function()
-        local specs = filters.parse("foo bar*.lua")
+        local specs = parser.parse("foo bar*.lua")
 
-        assert_eq(specs[1].kind, filters.FilterKind.Simple)
+        assert_eq(specs[1].kind, parser.FilterKind.Simple)
         assert_eq(specs[1].value, "foo")
 
-        assert_eq(specs[2].kind, filters.FilterKind.Simple)
+        assert_eq(specs[2].kind, parser.FilterKind.Simple)
         assert_eq(specs[2].value, "bar.*\\.lua")
 
         assert_eq(#specs, 2)
     end)
 
     it("find by file contents", function()
-        local specs = filters.parse("foo /bar.*\\d")
-        assert_eq(specs[1].kind, filters.FilterKind.Simple)
+        local specs = parser.parse("foo /bar.*\\d")
+        assert_eq(specs[1].kind, parser.FilterKind.Simple)
         assert_eq(specs[1].negated, false)
         assert_eq(specs[1].value, "foo")
 
-        assert_eq(specs[2].kind, filters.FilterKind.FileContents)
+        assert_eq(specs[2].kind, parser.FilterKind.FileContents)
         assert_eq(specs[2].negated, false)
         assert_eq(specs[2].value, "bar.*\\d")
 
@@ -51,12 +52,12 @@ describe("Filters", function()
     end)
 
     it("negate specifiers", function()
-        local specs = filters.parse("-foo -/bar")
-        assert_eq(specs[1].kind, filters.FilterKind.Simple)
+        local specs = parser.parse("-foo -/bar")
+        assert_eq(specs[1].kind, parser.FilterKind.Simple)
         assert_eq(specs[1].negated, true)
         assert_eq(specs[1].value, "foo")
 
-        assert_eq(specs[2].kind, filters.FilterKind.FileContents)
+        assert_eq(specs[2].kind, parser.FilterKind.FileContents)
         assert_eq(specs[2].negated, true)
         assert_eq(specs[2].value, "bar")
 

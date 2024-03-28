@@ -5,9 +5,7 @@ local M = {}
 ---@param spec string
 ---@return string
 local function adjust_regex(spec)
-    local s = string.gsub(spec, "%.", "\\.")
-    s = string.gsub(s, "*", ".*")
-
+    local s, _ = spec:gsub("%.", "\\."):gsub("*", ".*")
     return s
 end
 
@@ -28,26 +26,27 @@ M.FilterKind = {
 ---
 ---@param filter string
 ---@return FilterSpec[]
-M.parse = function(filter)
+function M.parse(filter)
     ---@type FilterSpec[]
     local specs = {}
 
-    for spec in string.gmatch(filter, "%S+") do
+    for spec in filter:gmatch("%S+") do
         ---@type FilterSpec
-        local new_spec = {}
+        local new_spec = {
+            kind = M.FilterKind.Simple,
+            negated = false,
+            value = "",
+        }
 
         if vim.startswith(spec, "-") then
             new_spec.negated = true
             spec = spec:sub(2)
-        else
-            new_spec.negated = false
         end
 
         if vim.startswith(spec, "/") then
             new_spec.kind = M.FilterKind.FileContents
             new_spec.value = spec:sub(2)
         else
-            new_spec.kind = M.FilterKind.Simple
             new_spec.value = adjust_regex(spec)
         end
 
