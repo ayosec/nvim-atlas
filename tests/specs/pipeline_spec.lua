@@ -22,7 +22,7 @@ describe("Pipeline Builder", function()
     end)
 
     it("search file contents", function()
-        local specs = parser.parse("foo -/first /second -bar")
+        local specs = parser.parse("foo -/first /second /third -bar")
         local pl = pipeline.build(specs, atlas.defaults())
 
         assert_eq(pl.output, pipeline.PipeOutput.JsonLines)
@@ -34,9 +34,13 @@ describe("Pipeline Builder", function()
             pl.commands[4],
             { "xargs", "rg", "--null", "--files-without-match", "--regexp", "first" }
         )
-        testutils.assert_list_contains(pl.commands[5], { "xargs", "rg", "--null", "--json", "--regexp", "second" })
+        testutils.assert_list_contains(
+            pl.commands[5],
+            { "xargs", "rg", "--null", "--files-with-matches", "--regexp", "third" }
+        )
+        testutils.assert_list_contains(pl.commands[6], { "xargs", "rg", "--null", "--json", "--regexp", "second" })
 
-        assert_eq(#pl.commands, 5)
+        assert_eq(#pl.commands, 6)
     end)
 
     it("specialize single filter for file contents", function()

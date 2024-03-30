@@ -133,13 +133,11 @@ function M.build(specs, config)
                 spec.value,
             }
 
-            if spec.negated then
-                table.insert(cmd, "--files-without-match")
-            end
-
             if non_negated == nil and not spec.negated then
                 non_negated = cmd
             else
+                local arg = spec.negated and "--files-without-match" or "--files-with-matches"
+                table.insert(cmd, arg)
                 table.insert(commands, cmd)
             end
         end
