@@ -63,4 +63,30 @@ describe("Filter Parser", function()
 
         assert_eq(#specs, 2)
     end)
+
+    it("rest-of-the-line (//) specifier for file contents", function()
+        local specs = parser.parse("foo //a bb ccc")
+        assert_eq(specs[1].kind, parser.FilterKind.Simple)
+        assert_eq(specs[1].negated, false)
+        assert_eq(specs[1].value, "foo")
+
+        assert_eq(specs[2].kind, parser.FilterKind.FileContents)
+        assert_eq(specs[2].negated, false)
+        assert_eq(specs[2].value, "a bb ccc")
+
+        assert_eq(#specs, 2)
+    end)
+
+    it("negated // filters", function()
+        local specs = parser.parse("foo -//a bb ccc")
+        assert_eq(specs[1].kind, parser.FilterKind.Simple)
+        assert_eq(specs[1].negated, false)
+        assert_eq(specs[1].value, "foo")
+
+        assert_eq(specs[2].kind, parser.FilterKind.FileContents)
+        assert_eq(specs[2].negated, true)
+        assert_eq(specs[2].value, "a bb ccc")
+
+        assert_eq(#specs, 2)
+    end)
 end)

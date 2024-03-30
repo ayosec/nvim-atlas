@@ -22,6 +22,47 @@ M.FilterKind = {
 ---@field negated boolean
 ---@field value string
 
+---@class LexerToken
+---@field negated boolean
+---@field value string
+
+--- Split a filter into lexer tokens.
+---
+---@param filter string
+---@return fun(): LexerToken|nil
+local function lexer(filter)
+    local input = filter
+
+    return function()
+        input = vim.trim(input)
+
+        if input == "" then
+            return nil
+        end
+
+        local current
+        local negated = false
+
+        if vim.startswith(input, "-") then
+            negated = true
+            input = input:sub(2)
+        end
+
+        if vim.startswith(input, "//") then
+            current = input:sub(2)
+            input = ""
+        else
+            current = input:match("%S+")
+            input = input:sub(#current + 2)
+        end
+
+        return {
+            negated = negated,
+            value = current,
+        }
+    end
+end
+
 --- Parse a filter and return a list with each specifier.
 ---
 ---@param filter string
@@ -30,24 +71,19 @@ function M.parse(filter)
     ---@type FilterSpec[]
     local specs = {}
 
-    for spec in filter:gmatch("%S+") do
+    for token in lexer(filter) do
         ---@type FilterSpec
         local new_spec = {
             kind = M.FilterKind.Simple,
-            negated = false,
+            negated = token.negated,
             value = "",
         }
 
-        if vim.startswith(spec, "-") then
-            new_spec.negated = true
-            spec = spec:sub(2)
-        end
-
-        if vim.startswith(spec, "/") then
+        if vim.startswith(token.value, "/") then
             new_spec.kind = M.FilterKind.FileContents
-            new_spec.value = spec:sub(2)
+            new_spec.value = token.value:sub(2)
         else
-            new_spec.value = adjust_regex(spec)
+            new_spec.value = adjust_regex(token.value)
         end
 
         table.insert(specs, new_spec)
