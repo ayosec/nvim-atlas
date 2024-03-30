@@ -38,4 +38,15 @@ describe("Pipeline Builder", function()
 
         assert_eq(#pl.commands, 5)
     end)
+
+    it("specialize single filter for file contents", function()
+        local specs = parser.parse("/abc")
+        local pl = pipeline.build(specs, atlas.defaults())
+
+        assert_eq(pl.output, pipeline.PipeOutput.JsonLines)
+
+        testutils.assert_list_contains(pl.commands[1], { "rg", "--no-messages", "--json", "--regexp", "abc" })
+
+        assert_eq(#pl.commands, 1)
+    end)
 end)

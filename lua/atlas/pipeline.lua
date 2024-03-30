@@ -1,4 +1,4 @@
-local parser = require("atlas.filter_parser")
+local FilterKind = require("atlas.filter_parser").FilterKind
 
 local M = {}
 
@@ -14,6 +14,53 @@ M.PipeOutput = {
 ---@field commands string[][]
 ---@field output pipeOutput
 
+--- Extend the main command of the pipeline from configuration.
+---
+---@param command string[]
+---@param config AtlasConfig
+local function prepare_entrypoint(command, config)
+    if config.files.hidden then
+        table.insert(command, "--hidden")
+    end
+
+    for _, exclude_glob in ipairs(config.files.exclude_always) do
+        table.insert(command, "--global")
+        table.insert(command, "!" .. exclude_glob)
+    end
+end
+
+--- Specialized case when the filter is a single FileContents specifier.
+---
+---@param negated boolean
+---@param value string
+---@param config AtlasConfig
+---@return Pipeline
+local function specialized_single_file_contents(negated, value, config)
+    local pipeline_output
+
+    local cmd = {
+        config.programs.ripgrep,
+        "--no-messages",
+        "--regexp",
+        value,
+    }
+
+    prepare_entrypoint(cmd, config)
+
+    if negated then
+        pipeline_output = M.PipeOutput.FileNames
+        table.insert(cmd, "--files-without-match")
+    else
+        pipeline_output = M.PipeOutput.JsonLines
+        table.insert(cmd, "--json")
+    end
+
+    return {
+        commands = { cmd },
+        output = pipeline_output,
+    }
+end
+
 --- Build a pipeline with `rg` commands from a specifiers list.
 ---
 ---@param specs FilterSpec[]
@@ -23,6 +70,12 @@ function M.build(specs, config)
     local commands = {}
     local pipeline_output = M.PipeOutput.FileNames
 
+    -- If the filter is a single spec for FileContents, the pipeline is a
+    -- single rg(1) command.
+    if #specs == 1 and specs[1].kind == FilterKind.FileContents then
+        return specialized_single_file_contents(specs[1].negated, specs[1].value, config)
+    end
+
     -- The first command is always to generate the file list.
     local file_list = {
         config.programs.ripgrep,
@@ -31,14 +84,7 @@ function M.build(specs, config)
         "--files",
     }
 
-    if config.files.hidden then
-        table.insert(file_list, "--hiden")
-    end
-
-    for _, exclude_glob in ipairs(config.files.exclude_always) do
-        table.insert(file_list, "--global")
-        table.insert(file_list, "!" .. exclude_glob)
-    end
+    prepare_entrypoint(file_list, config)
 
     table.insert(commands, file_list)
 
@@ -49,7 +95,7 @@ function M.build(specs, config)
     local file_contents_filters = {}
 
     for _, spec in ipairs(specs) do
-        if spec.kind == parser.FilterKind.Simple then
+        if spec.kind == FilterKind.Simple then
             local cmd = {
                 config.programs.ripgrep,
                 "--no-messages",
@@ -63,7 +109,7 @@ function M.build(specs, config)
             end
 
             table.insert(commands, cmd)
-        elseif spec.kind == parser.FilterKind.FileContents then
+        elseif spec.kind == FilterKind.FileContents then
             table.insert(file_contents_filters, spec)
         else
             error("Invalid spec: " .. vim.inspect(spec))
