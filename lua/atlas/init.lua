@@ -16,6 +16,11 @@ function M.defaults()
             exclude_always = { ".git" },
 
             hidden = true,
+
+            --- Return the root directory for the search commands.
+            ---
+            ---@return string|nil
+            search_dir = function() end,
         },
 
         view = {

@@ -12,7 +12,7 @@ M.PipeOutput = {
 ---
 ---@class Pipeline
 ---@field commands string[][]
----@field output pipeOutput
+---@field output_kind pipeOutput
 
 --- Extend the main command of the pipeline from configuration.
 ---
@@ -24,7 +24,7 @@ local function prepare_entrypoint(command, config)
     end
 
     for _, exclude_glob in ipairs(config.files.exclude_always) do
-        table.insert(command, "--global")
+        table.insert(command, "--glob")
         table.insert(command, "!" .. exclude_glob)
     end
 end
@@ -36,10 +36,11 @@ end
 ---@param config AtlasConfig
 ---@return Pipeline
 local function specialized_single_file_contents(negated, value, config)
-    local pipeline_output
+    local output_kind
 
     local cmd = {
         config.programs.ripgrep,
+        "--ignore-case",
         "--no-messages",
         "--regexp",
         value,
@@ -48,16 +49,16 @@ local function specialized_single_file_contents(negated, value, config)
     prepare_entrypoint(cmd, config)
 
     if negated then
-        pipeline_output = M.PipeOutput.FileNames
+        output_kind = M.PipeOutput.FileNames
         table.insert(cmd, "--files-without-match")
     else
-        pipeline_output = M.PipeOutput.JsonLines
+        output_kind = M.PipeOutput.JsonLines
         table.insert(cmd, "--json")
     end
 
     return {
         commands = { cmd },
-        output = pipeline_output,
+        output_kind = output_kind,
     }
 end
 
@@ -68,7 +69,7 @@ end
 ---@return Pipeline
 function M.build(specs, config)
     local commands = {}
-    local pipeline_output = M.PipeOutput.FileNames
+    local output_kind = M.PipeOutput.FileNames
 
     -- If the filter is a single spec for FileContents, the pipeline is a
     -- single rg(1) command.
@@ -79,6 +80,7 @@ function M.build(specs, config)
     -- The first command is always to generate the file list.
     local file_list = {
         config.programs.ripgrep,
+        "--ignore-case",
         "--no-messages",
         "--null",
         "--files",
@@ -98,6 +100,7 @@ function M.build(specs, config)
         if spec.kind == FilterKind.Simple then
             local cmd = {
                 config.programs.ripgrep,
+                "--ignore-case",
                 "--no-messages",
                 "--null-data",
                 "--regexp",
@@ -143,7 +146,7 @@ function M.build(specs, config)
         end
 
         if non_negated ~= nil then
-            pipeline_output = M.PipeOutput.JsonLines
+            output_kind = M.PipeOutput.JsonLines
             table.insert(non_negated, "--json")
             table.insert(commands, non_negated)
         end
@@ -151,7 +154,7 @@ function M.build(specs, config)
 
     return {
         commands = commands,
-        output = pipeline_output,
+        output_kind = output_kind,
     }
 end
 

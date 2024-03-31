@@ -12,7 +12,7 @@ describe("Pipeline Builder", function()
         local specs = parser.parse("foo bar")
         local pl = pipeline.build(specs, atlas.defaults())
 
-        assert_eq(pl.output, pipeline.PipeOutput.FileNames)
+        assert_eq(pl.output_kind, pipeline.PipeOutput.FileNames)
 
         testutils.assert_list_contains(pl.commands[1], { "rg", "--no-messages", "--files", "--null" })
         testutils.assert_list_contains(pl.commands[2], { "rg", "--null-data", "--regexp", "foo" })
@@ -25,7 +25,7 @@ describe("Pipeline Builder", function()
         local specs = parser.parse("foo -/first /second /third -bar")
         local pl = pipeline.build(specs, atlas.defaults())
 
-        assert_eq(pl.output, pipeline.PipeOutput.JsonLines)
+        assert_eq(pl.output_kind, pipeline.PipeOutput.JsonLines)
 
         testutils.assert_list_contains(pl.commands[1], { "rg", "--no-messages", "--files", "--null" })
         testutils.assert_list_contains(pl.commands[2], { "rg", "--null-data", "--regexp", "foo" })
@@ -47,7 +47,7 @@ describe("Pipeline Builder", function()
         local specs = parser.parse("/abc")
         local pl = pipeline.build(specs, atlas.defaults())
 
-        assert_eq(pl.output, pipeline.PipeOutput.JsonLines)
+        assert_eq(pl.output_kind, pipeline.PipeOutput.JsonLines)
 
         testutils.assert_list_contains(pl.commands[1], { "rg", "--no-messages", "--json", "--regexp", "abc" })
 

@@ -2,6 +2,7 @@
     "runtime.version": "LuaJIT",
 
     "diagnostics.globals": [
+        "a",
         "after_each",
         "before_each",
         "describe",
