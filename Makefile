@@ -4,8 +4,6 @@ PLENARY_VERSION = v0.1.4
 CACHE_DIR = .cache
 PLENARY = $(CACHE_DIR)/plenary/$(PLENARY_VERSION)
 
-export PLENARY
-
 
 .PHONY: all
 all: test lint fmt-check
@@ -25,11 +23,7 @@ $(PLENARY): $(CACHE_DIR)
 
 .PHONY: test
 test: | $(PLENARY)
-	nvim \
-		--noplugin \
-		--headless \
-		-u tests/init.lua \
-		-c "PlenaryBustedDirectory tests/specs { minimal_init = './tests/init.lua' }"
+	tests/run.sh $(PLENARY)
 
 .PHONY: lint
 lint:
