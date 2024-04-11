@@ -1,20 +1,20 @@
 local M = {}
 
----@enum ResultsViewItemKind
-M.ResultsViewItemKind = {
+---@enum atlas.view.ItemKind
+M.ItemKind = {
     Directory = "D",
     File = "F",
     ContentMatch = "M",
 }
 
----@alias ResultsViewTree table<string|integer, ResultsViewItem>
+---@alias atlas.view.Tree table<string|integer, atlas.view.Item>
 
 --- Items in the results view.
 ---
----@class ResultsViewItem
----@field kind ResultsViewItemKind
+---@class atlas.view.Item
+---@field kind atlas.view.ItemKind
 ---@field path string
----@field children ResultsViewTree
+---@field children atlas.view.Tree
 ---@field line? integer
 ---@field text? string
 

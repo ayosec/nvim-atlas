@@ -4,27 +4,27 @@ local buffer = require("string.buffer")
 
 local M = {}
 
----@class PipelineResult
+---@class atlas.pipeline.Result
 ---@field file string
 ---@field line? integer
 ---@field text? string
 
----@class StderrCollector
+---@class atlas.impl.StderrCollector
 ---@field fd_write integer
 ---@field handle_reader any
 ---@field buffer string.buffer
 
----@class PipelineRunningContext
+---@class atlas.pipeline.RunningContext
 ---@field running integer
 ---@field failed boolean
----@field stderr StderrCollector
+---@field stderr atlas.impl.StderrCollector
 ---@field process_handles table<integer, any>
 ---@field pipeline_output string.buffer
----@field output_kind pipeOutput
----@field on_success fun(results: PipelineResult[])
+---@field output_kind atlas.pipeline.PipeOutput
+---@field on_success fun(results: atlas.pipeline.Result[])
 ---@field on_error fun(stderr: string)
 
----@return StderrCollector
+---@return atlas.impl.StderrCollector
 local function stderr_collector()
     local pipes = vim.loop.pipe()
     local output = buffer.new()
@@ -53,8 +53,8 @@ local function stderr_collector()
     }
 end
 
----@param context PipelineRunningContext
----@return PipelineResult[]
+---@param context atlas.pipeline.RunningContext
+---@return atlas.pipeline.Result[]
 local function build_results(context)
     local results = {}
 
@@ -83,7 +83,7 @@ local function build_results(context)
     return results
 end
 
----@param context PipelineRunningContext
+---@param context atlas.pipeline.RunningContext
 ---@param pid integer
 ---@param success boolean
 local function on_exit_handler(context, pid, success)
@@ -115,9 +115,9 @@ end
 --- Execute the commands in the pipeline, and invoke the
 --- handlers when they are finished.
 ---
----@param config AtlasConfig
----@param pipeline Pipeline
----@param on_success fun(results: PipelineResult[])
+---@param config atlas.Config
+---@param pipeline atlas.pipeline.Pipeline
+---@param on_success fun(results: atlas.pipeline.Result[])
 ---@param on_error fun(stderr: string)
 function M.run(config, pipeline, on_success, on_error)
     local search_dir = config.files.search_dir()

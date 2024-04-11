@@ -1,5 +1,5 @@
 local atlas = require("atlas")
-local parser = require("atlas.filter_parser")
+local filter = require("atlas.filter")
 local pipeline = require("atlas.pipeline")
 
 local testutils = require("tests.utils")
@@ -9,7 +9,7 @@ local assert_eq = assert.are.same
 
 describe("Pipeline Builder", function()
     it("simple filter", function()
-        local specs = parser.parse("foo bar")
+        local specs = filter.parse("foo bar")
         local pl = pipeline.build(specs, atlas.defaults())
 
         assert_eq(pl.output_kind, pipeline.PipeOutput.FileNames)
@@ -22,7 +22,7 @@ describe("Pipeline Builder", function()
     end)
 
     it("search file contents", function()
-        local specs = parser.parse("foo -/first /second /third -bar")
+        local specs = filter.parse("foo -/first /second /third -bar")
         local pl = pipeline.build(specs, atlas.defaults())
 
         assert_eq(pl.output_kind, pipeline.PipeOutput.JsonLines)
@@ -44,7 +44,7 @@ describe("Pipeline Builder", function()
     end)
 
     it("specialize single filter for file contents", function()
-        local specs = parser.parse("/abc")
+        local specs = filter.parse("/abc")
         local pl = pipeline.build(specs, atlas.defaults())
 
         assert_eq(pl.output_kind, pipeline.PipeOutput.JsonLines)

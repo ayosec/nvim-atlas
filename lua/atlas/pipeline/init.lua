@@ -1,8 +1,8 @@
-local FilterKind = require("atlas.filter_parser").FilterKind
+local FilterKind = require("atlas.filter").FilterKind
 
 local M = {}
 
----@enum pipeOutput
+---@enum atlas.pipeline.PipeOutput
 M.PipeOutput = {
     FileNames = 1,
     JsonLines = 2,
@@ -10,14 +10,14 @@ M.PipeOutput = {
 
 --- Commands to apply a filter.
 ---
----@class Pipeline
+---@class atlas.pipeline.Pipeline
 ---@field commands string[][]
----@field output_kind pipeOutput
+---@field output_kind atlas.pipeline.PipeOutput
 
 --- Extend the main command of the pipeline from configuration.
 ---
 ---@param command string[]
----@param config AtlasConfig
+---@param config atlas.Config
 local function prepare_entrypoint(command, config)
     if config.files.hidden then
         table.insert(command, "--hidden")
@@ -33,8 +33,8 @@ end
 ---
 ---@param negated boolean
 ---@param value string
----@param config AtlasConfig
----@return Pipeline
+---@param config atlas.Config
+---@return atlas.pipeline.Pipeline
 local function specialized_single_file_contents(negated, value, config)
     local output_kind
 
@@ -64,9 +64,9 @@ end
 
 --- Build a pipeline with `rg` commands from a specifiers list.
 ---
----@param specs FilterSpec[]
----@param config AtlasConfig
----@return Pipeline
+---@param specs atlas.filter.Spec[]
+---@param config atlas.Config
+---@return atlas.pipeline.Pipeline
 function M.build(specs, config)
     local commands = {}
     local output_kind = M.PipeOutput.FileNames
@@ -93,7 +93,7 @@ function M.build(specs, config)
     -- Specifiers against the file names are put before filters on file
     -- contents, so we have to keep the later on a separate list.
 
-    ---@type FilterSpec[]
+    ---@type atlas.filter.Spec[]
     local file_contents_filters = {}
 
     for _, spec in ipairs(specs) do

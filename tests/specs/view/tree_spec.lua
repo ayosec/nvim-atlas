@@ -1,15 +1,15 @@
 local Tree = require("atlas.view.tree")
 
-local ResultsViewItemKind = require("atlas.view").ResultsViewItemKind
+local ItemKind = require("atlas.view").ItemKind
 
 ---@diagnostic disable-next-line:undefined-field
 local assert_eq = assert.are.same
 
----@param tree ResultsViewTree
+---@param tree atlas.view.Tree
 ---@param parents string[]
 ---@param key string
----@param kind ResultsViewItemKind
----@return ResultsViewItem
+---@param kind atlas.view.ItemKind
+---@return atlas.view.Item
 local function assert_node(tree, parents, key, kind)
     local node = tree
     local full_paths = {}
@@ -40,19 +40,19 @@ end
 
 describe("UI Tree", function()
     it("build a tree with a single result", function()
-        ---@type PipelineResult[]
+        ---@type atlas.pipeline.Result[]
         local results = {
             { file = "a/b/c/d/1" },
         }
 
         local tree = Tree.build(results)
 
-        assert_node(tree, {}, "a/b/c/d", ResultsViewItemKind.Directory)
-        assert_node(tree, { "a/b/c/d" }, "1", ResultsViewItemKind.File)
+        assert_node(tree, {}, "a/b/c/d", ItemKind.Directory)
+        assert_node(tree, { "a/b/c/d" }, "1", ItemKind.File)
     end)
 
     it("build a tree only with filenames", function()
-        ---@type PipelineResult[]
+        ---@type atlas.pipeline.Result[]
         local results = {
             { file = "a/b/c/d/1" },
             { file = "a/b/c/d/2" },
@@ -76,8 +76,8 @@ describe("UI Tree", function()
 
         local tree = Tree.build(results)
 
-        local F = ResultsViewItemKind.File
-        local D = ResultsViewItemKind.Directory
+        local F = ItemKind.File
+        local D = ItemKind.Directory
 
         assert_node(tree, { "a" }, "b", D)
         assert_node(tree, { "a", "b" }, "c/d", D)
@@ -109,7 +109,7 @@ describe("UI Tree", function()
     end)
 
     it("build a tree with file matches", function()
-        ---@type PipelineResult[]
+        ---@type atlas.pipeline.Result[]
         local results = {
             { file = "a/b/1", line = 10, text = "x0" },
             { file = "a/b/2", line = 15, text = "x1" },
@@ -122,9 +122,9 @@ describe("UI Tree", function()
 
         local tree = Tree.build(results)
 
-        local F = ResultsViewItemKind.File
-        local D = ResultsViewItemKind.Directory
-        local C = ResultsViewItemKind.ContentMatch
+        local F = ItemKind.File
+        local D = ItemKind.Directory
+        local C = ItemKind.ContentMatch
 
         assert_node(tree, {}, "a/b", D)
         assert_node(tree, { "a/b" }, "c", D)

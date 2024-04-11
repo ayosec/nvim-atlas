@@ -9,7 +9,7 @@ local function adjust_regex(spec)
     return s
 end
 
----@enum kind
+---@enum atlas.filter.Kind
 M.FilterKind = {
     Simple = 1,
     FileContents = 2,
@@ -17,19 +17,19 @@ M.FilterKind = {
 
 --- Represent a specifier in a filter.
 ---
----@class FilterSpec
----@field kind kind
+---@class atlas.filter.Spec
+---@field kind atlas.filter.Kind
 ---@field negated boolean
 ---@field value string
 
----@class LexerToken
+---@class atlas.impl.LexerToken
 ---@field negated boolean
 ---@field value string
 
 --- Split a filter into lexer tokens.
 ---
 ---@param filter string
----@return fun(): LexerToken|nil
+---@return fun(): atlas.impl.LexerToken|nil
 local function lexer(filter)
     local input = filter
 
@@ -66,13 +66,13 @@ end
 --- Parse a filter and return a list with each specifier.
 ---
 ---@param filter string
----@return FilterSpec[]
+---@return atlas.filter.Spec[]
 function M.parse(filter)
-    ---@type FilterSpec[]
+    ---@type atlas.filter.Spec[]
     local specs = {}
 
     for token in lexer(filter) do
-        ---@type FilterSpec
+        ---@type atlas.filter.Spec
         local new_spec = {
             kind = M.FilterKind.Simple,
             negated = token.negated,

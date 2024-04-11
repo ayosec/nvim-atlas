@@ -1,15 +1,15 @@
 local M = {}
 
-local ResultsViewItemKind = require("atlas.view").ResultsViewItemKind
+local ResultsViewItemKind = require("atlas.view").ItemKind
 
 --- Find the node for the `path`. It may split an existing node if it shares
 --- a prefix with the `path`.
 ---
----@param tree ResultsViewTree
+---@param tree atlas.view.Tree
 ---@param path string
----@param parent_node ResultsViewItem?
+---@param parent_node atlas.view.Item?
 ---@param parent_shared_prefix string
----@return ResultsViewItem?
+---@return atlas.view.Item?
 local function find_parent_node(tree, path, parent_node, parent_shared_prefix)
     -- If `path` is already a node of the tree, we don't need to find
     -- the shared prefix.
@@ -92,9 +92,9 @@ local function find_parent_node(tree, path, parent_node, parent_shared_prefix)
     return parent_node
 end
 
----@param parent ResultsViewTree
+---@param parent atlas.view.Tree
 ---@param parent_path string
----@param result PipelineResult
+---@param result atlas.pipeline.Result
 local function append_node(parent, parent_path, result)
     local relative_path = result.file
 
@@ -124,13 +124,13 @@ local function append_node(parent, parent_path, result)
 
     -- Add the node the tree.
     --
-    -- If the `PipelineResult` has a line number, the node for the file
+    -- If the `pipeline.Result` has a line number, the node for the file
     -- is either a kind=ContentMatch (for a single line), or a kind=File
     -- (for multiple lines, in the `children` field).
 
     local file_node_key = vim.fs.basename(relative_path)
 
-    ---@type ResultsViewItem
+    ---@type atlas.view.Item
     local file_node = target[file_node_key]
 
     if file_node == nil then
@@ -189,10 +189,10 @@ end
 
 --- Build a tree from the results of a search pipeline.
 ---
----@param results PipelineResult[]
----@return ResultsViewTree
+---@param results atlas.pipeline.Result[]
+---@return atlas.view.Tree
 function M.build(results)
-    ---@type ResultsViewTree
+    ---@type atlas.view.Tree
     local tree = {}
 
     for _, result in ipairs(results) do

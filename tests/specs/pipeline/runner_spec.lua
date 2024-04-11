@@ -1,7 +1,7 @@
 require("plenary.async").tests.add_to_env()
 
 local atlas = require("atlas")
-local parser = require("atlas.filter_parser")
+local filter = require("atlas.filter")
 local pipeline = require("atlas.pipeline")
 local runner = require("atlas.pipeline.runner")
 
@@ -21,7 +21,7 @@ describe("Pipeline Runner", function()
     a.it("pipeline only with filenames", function()
         local tx, rx = channel.oneshot()
 
-        local specs = parser.parse("b e")
+        local specs = filter.parse("b e")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(results)
@@ -41,7 +41,7 @@ describe("Pipeline Runner", function()
     a.it("execute a complex pipeline", function()
         local tx, rx = channel.oneshot()
 
-        local specs = parser.parse("a*r -d -/nothing /c.*a.*t")
+        local specs = filter.parse("a*r -d -/nothing /c.*a.*t")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(results)
@@ -62,7 +62,7 @@ describe("Pipeline Runner", function()
     a.it("execute a single-filter pipeline", function()
         local tx, rx = channel.oneshot()
 
-        local specs = parser.parse("/stoi.*irr")
+        local specs = filter.parse("/stoi.*irr")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(results)
@@ -83,7 +83,7 @@ describe("Pipeline Runner", function()
     a.it("can collect errors from the pipeline", function()
         local tx, rx = channel.oneshot()
 
-        local specs = parser.parse("demo /[a-")
+        local specs = filter.parse("demo /[a-")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(results)

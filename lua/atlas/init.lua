@@ -3,7 +3,7 @@ local M = {}
 M.namespace = vim.api.nvim_create_namespace("atlas")
 
 function M.defaults()
-    ---@class AtlasConfig
+    ---@class atlas.Config
     local defaults = {
         user_command = "Atlas",
 
@@ -31,10 +31,10 @@ function M.defaults()
     return defaults
 end
 
---- @type AtlasConfig
+--- @type atlas.Config
 M.options = {}
 
----@param opts? AtlasConfig
+---@param opts? atlas.Config
 function M.setup(opts)
     M.options = vim.tbl_deep_extend("force", {}, M.defaults(), opts or {})
 end
