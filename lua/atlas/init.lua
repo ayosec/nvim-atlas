@@ -24,7 +24,15 @@ function M.defaults()
         },
 
         view = {
-            max_lines = 30,
+            --- Function to return a string for the left margin of a subtree.
+            --- It receives the depth level (1-based), and is called for each
+            --- file.
+            ---
+            --- If `nil`, the left margin is filled with three spaces for
+            --- each level after the top.
+            ---
+            ---@type nil|fun(level: integer, item: atlas.view.Item): string
+            level_margin_fn = nil,
         },
     }
 
