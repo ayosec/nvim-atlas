@@ -25,7 +25,7 @@ describe("Pipeline Builder", function()
     end)
 
     it("search file contents", function()
-        local specs = filter.parse("foo -/first /second /third -bar")
+        local specs = filter.parse("foo -/first /second /third -bar =fix1 -=/fix2")
         local pl = pipeline.build(specs, atlas.default_config())
 
         assert_eq(pl.output_kind, pipeline.PipeOutput.JsonLines)
@@ -33,17 +33,22 @@ describe("Pipeline Builder", function()
         testutils.assert_list_contains(pl.commands[1], { RG, "--no-messages", "--files", "--null" })
         testutils.assert_list_contains(pl.commands[2], { RG, "--null-data", "--regexp", "foo" })
         testutils.assert_list_contains(pl.commands[3], { RG, "--null-data", "--invert-match", "--regexp", "bar" })
+        testutils.assert_list_contains(pl.commands[4], { RG, "--null-data", "--fixed-strings", "--regexp", "fix1" })
         testutils.assert_list_contains(
-            pl.commands[4],
+            pl.commands[5],
             { XARGS, RG, "--null", "--files-without-match", "--regexp", "first" }
         )
         testutils.assert_list_contains(
-            pl.commands[5],
+            pl.commands[6],
             { XARGS, RG, "--null", "--files-with-matches", "--regexp", "third" }
         )
-        testutils.assert_list_contains(pl.commands[6], { XARGS, RG, "--null", "--json", "--regexp", "second" })
+        testutils.assert_list_contains(
+            pl.commands[7],
+            { XARGS, RG, "--null", "--files-without-match", "--fixed-strings", "--regexp", "fix2" }
+        )
+        testutils.assert_list_contains(pl.commands[8], { XARGS, RG, "--null", "--json", "--regexp", "second" })
 
-        assert_eq(#pl.commands, 6)
+        assert_eq(#pl.commands, 8)
     end)
 
     it("specialize single filter for file contents", function()

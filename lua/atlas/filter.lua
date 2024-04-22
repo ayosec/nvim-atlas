@@ -1,14 +1,5 @@
 local M = {}
 
---- Adjust a specifier to replace `.` with `\.`, and `*` with `.*`.
----
----@param spec string
----@return string
-local function adjust_regex(spec)
-    local s, _ = spec:gsub("%.", "\\."):gsub("*", ".*")
-    return s
-end
-
 ---@enum atlas.filter.Kind
 M.FilterKind = {
     Simple = 1,
@@ -20,6 +11,7 @@ M.FilterKind = {
 ---@class atlas.filter.Spec
 ---@field kind atlas.filter.Kind
 ---@field negated boolean
+---@field fixed_string boolean
 ---@field value string
 
 ---@class atlas.impl.LexerToken
@@ -42,9 +34,17 @@ local function lexer(filter)
 
         local current
         local negated = false
+        local fixed_string = false
 
-        if vim.startswith(input, "-") then
-            negated = true
+        while input ~= "" do
+            if vim.startswith(input, "-") then
+                negated = true
+            elseif vim.startswith(input, "=") then
+                fixed_string = true
+            else
+                break
+            end
+
             input = input:sub(2)
         end
 
@@ -52,12 +52,13 @@ local function lexer(filter)
             current = input:sub(2)
             input = ""
         else
-            current = input:match("%S+")
+            current = input:match("%S+") or ""
             input = input:sub(#current + 2)
         end
 
         return {
             negated = negated,
+            fixed_string = fixed_string,
             value = current,
         }
     end
@@ -76,6 +77,7 @@ function M.parse(filter)
         local new_spec = {
             kind = M.FilterKind.Simple,
             negated = token.negated,
+            fixed_string = token.fixed_string,
             value = "",
         }
 
@@ -83,10 +85,12 @@ function M.parse(filter)
             new_spec.kind = M.FilterKind.FileContents
             new_spec.value = token.value:sub(2)
         else
-            new_spec.value = adjust_regex(token.value)
+            new_spec.value = token.value
         end
 
-        table.insert(specs, new_spec)
+        if new_spec.value ~= "" then
+            table.insert(specs, new_spec)
+        end
     end
 
     return specs

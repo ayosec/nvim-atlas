@@ -31,24 +31,28 @@ end
 
 --- Specialized case when the filter is a single FileContents specifier.
 ---
----@param negated boolean
----@param value string
+---@param spec atlas.filter.Spec
 ---@param config atlas.Config
 ---@return atlas.pipeline.Pipeline
-local function specialized_single_file_contents(negated, value, config)
+local function specialized_single_file_contents(spec, config)
     local output_kind
 
     local cmd = {
         config.programs.ripgrep,
         "--ignore-case",
         "--no-messages",
+        "--null",
         "--regexp",
-        value,
+        spec.value,
     }
+
+    if spec.fixed_string then
+        table.insert(cmd, "--fixed-strings")
+    end
 
     prepare_entrypoint(cmd, config)
 
-    if negated then
+    if spec.negated then
         output_kind = M.PipeOutput.FileNames
         table.insert(cmd, "--files-without-match")
     else
@@ -74,7 +78,7 @@ function M.build(specs, config)
     -- If the filter is a single spec for FileContents, the pipeline is a
     -- single rg(1) command.
     if #specs == 1 and specs[1].kind == FilterKind.FileContents then
-        return specialized_single_file_contents(specs[1].negated, specs[1].value, config)
+        return specialized_single_file_contents(specs[1], config)
     end
 
     -- The first command is always to generate the file list.
@@ -107,6 +111,10 @@ function M.build(specs, config)
                 spec.value,
             }
 
+            if spec.fixed_string then
+                table.insert(cmd, "--fixed-strings")
+            end
+
             if spec.negated then
                 table.insert(cmd, "--invert-match")
             end
@@ -136,6 +144,10 @@ function M.build(specs, config)
                 "--regexp",
                 spec.value,
             }
+
+            if spec.fixed_string then
+                table.insert(cmd, "--fixed-strings")
+            end
 
             if non_negated == nil and not spec.negated then
                 non_negated = cmd

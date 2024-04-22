@@ -38,6 +38,7 @@ end
 
 local function default_highlights()
     local default_links = {
+        AtlasPromptItemFixedString = "Operator",
         AtlasPromptItemNegate = "Operator",
         AtlasPromptItemRegex = "String",
         AtlasPromptItemSource = "Identifier",
@@ -62,6 +63,7 @@ function M.configure_buffer(bufnr)
         -- Define first to set lowest priority.
         vim.cmd.syntax("match", "AtlasPromptItemOther", [[/\S\+/]])
 
+        vim.cmd.syntax("match", "AtlasPromptItemFixedString", [[/=/]])
         vim.cmd.syntax("match", "AtlasPromptItemNegate", [[/-/]])
 
         vim.cmd.syntax("match", "AtlasPromptItemRegex", [[=/\S\+=]])
