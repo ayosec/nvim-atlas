@@ -16,4 +16,20 @@ function utils.assert_list_contains(target, items)
     end
 end
 
+--- Return an iterator to get the unindented lines of a `[[ ]]` string.
+---
+---@param lines string
+---@return fun(): string
+function utils.lines(lines)
+    local it = vim.gsplit(lines, "\n")
+    return function()
+        local line = it()
+        if line then
+            return vim.trim(line):gsub("\\t", "\t")
+        end
+
+        error("No more lines")
+    end
+end
+
 return utils

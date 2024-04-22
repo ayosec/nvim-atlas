@@ -1,5 +1,6 @@
 local BufData = require("atlas.view.bufdata")
 local atlas = require("atlas")
+local testutils = require("tests.utils")
 
 local ItemKind = require("atlas.view").ItemKind
 
@@ -7,23 +8,23 @@ local ItemKind = require("atlas.view").ItemKind
 local assert_eq = assert.are.same
 
 ---@param bufdata atlas.view.bufdata.BufData
+---@param label string
 ---@param path string
 ---@param fold_level integer|nil
----@param label string
-local function assert_buf_line(bufdata, path, fold_level, label)
+local function assert_buf_line(bufdata, label, path, fold_level)
     local line = table.remove(bufdata.lines, 1)
 
     if line == nil then
         error("No buffer line for " .. vim.inspect(path))
     end
 
-    local _, _, metadata_text, line_label = line:find("(%S+) (.+)")
+    local _, _, _, line_label = line:find("(%S+) (.+)")
 
-    if #metadata_text == 0 or #label == 0 then
+    if #label == 0 then
         error("Unexpected format for path " .. vim.inspect(path) .. ": " .. vim.inspect(line))
     end
 
-    local metadata = BufData.parse_metadata(metadata_text)
+    local metadata = BufData.parse_metadata(line)
     assert(metadata ~= nil)
 
     local item = bufdata.items[metadata.item_id]
@@ -65,7 +66,7 @@ describe("Buffer Data", function()
                             [1] = {
                                 path = "a/x",
                                 kind = ItemKind.ContentMatch,
-                                line = 100,
+                                line = 10,
                                 text = "first match",
                                 children = {},
                             },
@@ -78,19 +79,38 @@ describe("Buffer Data", function()
                             },
                         },
                     },
+                    ["y"] = {
+                        path = "a/y",
+                        kind = ItemKind.ContentMatch,
+                        line = 300,
+                        text = "match in y",
+                        children = {},
+                    },
                 },
             },
         }
 
-        local bufdata = BufData.render(atlas.defaults(), tree)
+        local bufdata = BufData.render(atlas.default_config(), tree, 300)
 
-        assert_buf_line(bufdata, "a", 1, "a/")
-        assert_buf_line(bufdata, "a/b/c", 2, "   b/c/")
-        assert_buf_line(bufdata, "a/b/c/1", nil, "      1")
-        assert_buf_line(bufdata, "a/b/c/2", nil, "      2")
-        assert_buf_line(bufdata, "a/x", 2, "   x")
-        assert_buf_line(bufdata, "a/x", nil, "      @100: first match")
-        assert_buf_line(bufdata, "a/x", nil, "      @200: second match")
+        local lines = testutils.lines([[
+            a/
+            ├── b/c/
+            │   ├── 1
+            │   └── 2
+            ├── x
+            │     @10:\tfirst match
+            │    @200:\tsecond match
+            └── y:\tmatch in y
+        ]])
+
+        assert_buf_line(bufdata, lines(), "a", 1)
+        assert_buf_line(bufdata, lines(), "a/b/c", 2)
+        assert_buf_line(bufdata, lines(), "a/b/c/1", nil)
+        assert_buf_line(bufdata, lines(), "a/b/c/2", nil)
+        assert_buf_line(bufdata, lines(), "a/x", 2)
+        assert_buf_line(bufdata, lines(), "a/x", nil)
+        assert_buf_line(bufdata, lines(), "a/x", nil)
+        assert_buf_line(bufdata, lines(), "a/y", nil)
 
         assert_eq(bufdata.lines, {})
     end)

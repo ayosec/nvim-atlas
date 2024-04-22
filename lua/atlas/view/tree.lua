@@ -94,7 +94,7 @@ end
 
 ---@param parent atlas.view.Tree
 ---@param parent_path string
----@param result atlas.pipeline.Result
+---@param result atlas.pipeline.ResultItem
 local function append_node(parent, parent_path, result)
     local relative_path = result.file
 
@@ -145,22 +145,34 @@ local function append_node(parent, parent_path, result)
 
     local line_key = result.line
 
-    if line_key ~= nil then
-        local ContentMatch = ResultsViewItemKind.ContentMatch
+    local ContentMatch = ResultsViewItemKind.ContentMatch
+    local function make_node()
+        return {
+            kind = ContentMatch,
+            path = result.file,
+            line = result.line,
+            text = result.text,
+            children = {},
+        }
+    end
 
+    if line_key ~= nil then
         if file_node.kind == ContentMatch then
             -- Replacing a node with a single result.
             --
             -- A kind=File node is created, and the previous node is
             -- moved into it.
 
-            target[file_node_key] = {
-                kind = ResultsViewItemKind.File,
-                path = result.file,
-                children = {
-                    [result.line] = file_node,
-                },
-            }
+            if file_node.line ~= result.line then
+                target[file_node_key] = {
+                    kind = ResultsViewItemKind.File,
+                    path = result.file,
+                    children = {
+                        [file_node.line] = file_node,
+                        [result.line] = make_node(),
+                    },
+                }
+            end
         elseif vim.tbl_isempty(file_node.children) then
             -- Just-created node.
             --
@@ -175,13 +187,7 @@ local function append_node(parent, parent_path, result)
             -- Add the result only if the line is not occupied.
 
             if file_node.children[line_key] == nil then
-                file_node.children[line_key] = {
-                    kind = ContentMatch,
-                    path = result.file,
-                    line = result.line,
-                    text = result.text,
-                    children = {},
-                }
+                file_node.children[line_key] = make_node()
             end
         end
     end
@@ -189,14 +195,14 @@ end
 
 --- Build a tree from the results of a search pipeline.
 ---
----@param results atlas.pipeline.Result[]
+---@param result atlas.pipeline.Result
 ---@return atlas.view.Tree
-function M.build(results)
+function M.build(result)
     ---@type atlas.view.Tree
     local tree = {}
 
-    for _, result in ipairs(results) do
-        local dirname = vim.fs.dirname(result.file)
+    for _, item in ipairs(result.items) do
+        local dirname = vim.fs.dirname(item.file)
 
         local parent_tree, parent_path
 
@@ -209,9 +215,9 @@ function M.build(results)
         end
 
         if parent_tree ~= nil then
-            append_node(parent_tree, parent_path, result)
+            append_node(parent_tree, parent_path, item)
         else
-            append_node(tree, "", result)
+            append_node(tree, "", item)
         end
     end
 

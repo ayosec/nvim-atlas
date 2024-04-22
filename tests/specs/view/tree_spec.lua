@@ -40,9 +40,10 @@ end
 
 describe("UI Tree", function()
     it("build a tree with a single result", function()
-        ---@type atlas.pipeline.Result[]
+        ---@type atlas.pipeline.ResultItem[]
         local results = {
-            { file = "a/b/c/d/1" },
+            items = { { file = "a/b/c/d/1" } },
+            max_line_number = 1,
         }
 
         local tree = Tree.build(results)
@@ -52,8 +53,8 @@ describe("UI Tree", function()
     end)
 
     it("build a tree only with filenames", function()
-        ---@type atlas.pipeline.Result[]
-        local results = {
+        ---@type atlas.pipeline.ResultItem[]
+        local items = {
             { file = "a/b/c/d/1" },
             { file = "a/b/c/d/2" },
             { file = "a/b/d/3" },
@@ -74,7 +75,10 @@ describe("UI Tree", function()
             { file = "n/n/n/18" },
         }
 
-        local tree = Tree.build(results)
+        local tree = Tree.build {
+            items = items,
+            max_line_number = 0,
+        }
 
         local F = ItemKind.File
         local D = ItemKind.Directory
@@ -109,8 +113,8 @@ describe("UI Tree", function()
     end)
 
     it("build a tree with file matches", function()
-        ---@type atlas.pipeline.Result[]
-        local results = {
+        ---@type atlas.pipeline.ResultItem[]
+        local items = {
             { file = "a/b/1", line = 10, text = "x0" },
             { file = "a/b/2", line = 15, text = "x1" },
             { file = "a/b/c/3", line = 20, text = "x2" },
@@ -120,7 +124,10 @@ describe("UI Tree", function()
             { file = "a/b/c/4", line = 35, text = "x5" },
         }
 
-        local tree = Tree.build(results)
+        local tree = Tree.build {
+            items = items,
+            max_line_number = 35,
+        }
 
         local F = ItemKind.File
         local D = ItemKind.Directory

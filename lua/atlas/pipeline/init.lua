@@ -130,6 +130,7 @@ function M.build(specs, config)
                 config.programs.xargs,
                 "--null",
                 config.programs.ripgrep,
+                "--ignore-case",
                 "--no-messages",
                 "--null",
                 "--regexp",
