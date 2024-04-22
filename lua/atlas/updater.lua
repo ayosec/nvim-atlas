@@ -45,7 +45,6 @@ local function render_results(instance, result)
         vim.api.nvim_buf_call(instance.view.results_buffer, function()
             vim.cmd.normal { args = { "zx" }, bang = true }
         end)
-
     end)
 end
 

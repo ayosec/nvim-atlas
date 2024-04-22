@@ -110,7 +110,7 @@ describe("Buffer Data", function()
         assert_buf_line(bufdata, lines(), "a/x", 2)
         assert_buf_line(bufdata, lines(), "a/x", nil)
         assert_buf_line(bufdata, lines(), "a/x", nil)
-        assert_buf_line(bufdata, lines(), "a/y", nil)
+        assert_buf_line(bufdata, lines(), "a/y", 2)
 
         assert_eq(bufdata.lines, {})
     end)

@@ -119,6 +119,8 @@ local function walk_tree(config, tree, line_number_width, items, lines, vartabst
     local subtree_prefix_intermediate = ""
     local subtree_prefix_last = ""
 
+    local previous_has_children = false
+
     if type(margin_by_depth) == "number" then
         draw_tree = true
 
@@ -142,7 +144,7 @@ local function walk_tree(config, tree, line_number_width, items, lines, vartabst
         -- Metadata
         buffer:put(item.kind, item_id)
 
-        if has_children then
+        if has_children or previous_has_children then
             buffer:put("{{{", fold_level)
         end
 
@@ -193,6 +195,8 @@ local function walk_tree(config, tree, line_number_width, items, lines, vartabst
         table.insert(lines, line)
 
         if has_children then
+            previous_has_children = true
+
             walk_tree(
                 config,
                 item.children,
