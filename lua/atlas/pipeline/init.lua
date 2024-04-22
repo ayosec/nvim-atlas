@@ -29,6 +29,18 @@ local function prepare_entrypoint(command, config)
     end
 end
 
+---@param config atlas.Config
+---@return string
+local function case_sensitivity_argument(config)
+    if config.search.case_sensitivity == "smart" then
+        return "--smart-case"
+    elseif config.search.case_sensitivity then
+        return "--case-sensitive"
+    else
+        return "--ignore-case"
+    end
+end
+
 --- Specialized case when the filter is a single FileContents specifier.
 ---
 ---@param spec atlas.filter.Spec
@@ -39,7 +51,7 @@ local function specialized_single_file_contents(spec, config)
 
     local cmd = {
         config.programs.ripgrep,
-        "--ignore-case",
+        case_sensitivity_argument(config),
         "--no-messages",
         "--null",
         "--regexp",
@@ -84,7 +96,7 @@ function M.build(specs, config)
     -- The first command is always to generate the file list.
     local file_list = {
         config.programs.ripgrep,
-        "--ignore-case",
+        case_sensitivity_argument(config),
         "--no-messages",
         "--null",
         "--files",
@@ -104,7 +116,7 @@ function M.build(specs, config)
         if spec.kind == FilterKind.Simple then
             local cmd = {
                 config.programs.ripgrep,
-                "--ignore-case",
+                case_sensitivity_argument(config),
                 "--no-messages",
                 "--null-data",
                 "--regexp",
@@ -138,7 +150,7 @@ function M.build(specs, config)
                 config.programs.xargs,
                 "--null",
                 config.programs.ripgrep,
-                "--ignore-case",
+                case_sensitivity_argument(config),
                 "--no-messages",
                 "--null",
                 "--regexp",

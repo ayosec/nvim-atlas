@@ -1,6 +1,6 @@
+local Filter = require("atlas.filter")
+local Pipeline = require("atlas.pipeline")
 local atlas = require("atlas")
-local filter = require("atlas.filter")
-local pipeline = require("atlas.pipeline")
 
 local testutils = require("tests.utils")
 
@@ -12,10 +12,10 @@ local XARGS = vim.fn.exepath("xargs")
 
 describe("Pipeline Builder", function()
     it("simple filter", function()
-        local specs = filter.parse("foo bar")
-        local pl = pipeline.build(specs, atlas.default_config())
+        local specs = Filter.parse("foo bar")
+        local pl = Pipeline.build(specs, atlas.default_config())
 
-        assert_eq(pl.output_kind, pipeline.PipeOutput.FileNames)
+        assert_eq(pl.output_kind, Pipeline.PipeOutput.FileNames)
 
         testutils.assert_list_contains(pl.commands[1], { RG, "--no-messages", "--files", "--null" })
         testutils.assert_list_contains(pl.commands[2], { RG, "--null-data", "--regexp", "foo" })
@@ -25,10 +25,10 @@ describe("Pipeline Builder", function()
     end)
 
     it("search file contents", function()
-        local specs = filter.parse("foo -/first /second /third -bar =fix1 -=/fix2")
-        local pl = pipeline.build(specs, atlas.default_config())
+        local specs = Filter.parse("foo -/first /second /third -bar =fix1 -=/fix2")
+        local pl = Pipeline.build(specs, atlas.default_config())
 
-        assert_eq(pl.output_kind, pipeline.PipeOutput.JsonLines)
+        assert_eq(pl.output_kind, Pipeline.PipeOutput.JsonLines)
 
         testutils.assert_list_contains(pl.commands[1], { RG, "--no-messages", "--files", "--null" })
         testutils.assert_list_contains(pl.commands[2], { RG, "--null-data", "--regexp", "foo" })
@@ -52,13 +52,37 @@ describe("Pipeline Builder", function()
     end)
 
     it("specialize single filter for file contents", function()
-        local specs = filter.parse("/abc")
-        local pl = pipeline.build(specs, atlas.default_config())
+        local specs = Filter.parse("/abc")
+        local pl = Pipeline.build(specs, atlas.default_config())
 
-        assert_eq(pl.output_kind, pipeline.PipeOutput.JsonLines)
+        assert_eq(pl.output_kind, Pipeline.PipeOutput.JsonLines)
 
         testutils.assert_list_contains(pl.commands[1], { RG, "--no-messages", "--json", "--regexp", "abc" })
 
         assert_eq(#pl.commands, 1)
+    end)
+
+    it("ignore-case argument", function()
+        local tests = {
+            { false, "--ignore-case" },
+            { true, "--case-sensitive" },
+            { "smart", "--smart-case" },
+        }
+
+        local filters = { "foo", "/foo", "foo /bar", "foo1 /bar foo2 /bar2" }
+
+        for _, test in ipairs(tests) do
+            for _, filter in ipairs(filters) do
+                local cfg = atlas.default_config()
+                cfg.search.case_sensitivity = test[1]
+
+                local specs = Filter.parse(filter)
+                local pl = Pipeline.build(specs, cfg)
+
+                for _, cmd in ipairs(pl.commands) do
+                    testutils.assert_list_contains(cmd, { test[2] })
+                end
+            end
+        end
     end)
 end)

@@ -29,6 +29,16 @@ function M.defaults()
             --- run the search.
             ---@type integer
             update_wait_time = 50,
+
+            --- Determine if search patterns are case-sensitive (`true`) or
+            --- case-insensitive (`false`).
+            ---
+            --- If it is `"smart"`, the patterns are case-insensitive if all letters
+            --- are lowercase. See the documentation of the `--smart-case` argument
+            --- in ripgrep for more details.
+            ---
+            ---@type boolean|"smart"
+            case_sensitivity = "smart",
         },
 
         files = {
