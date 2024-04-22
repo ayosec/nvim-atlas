@@ -20,13 +20,13 @@ local M = {}
 
 ---@class atlas.pipeline.RunningContext
 ---@field max_results integer
----@field found_results integer
 ---@field running integer
 ---@field reader_status atlas.pipeline.ReaderStatus
 ---@field stderr atlas.impl.StderrCollector
 ---@field process_handles table<integer, any>
----@field pipeline_output string.buffer
----@field output_kind atlas.pipeline.PipeOutput
+---@field pipeline_output_pending string
+---@field pipeline_output_parser fun(context: atlas.pipeline.RunningContext, data: string):string
+---@field pipeline_result atlas.pipeline.Result
 ---@field on_success fun(results: atlas.pipeline.Result)
 ---@field on_error fun(stderr: string)
 
@@ -86,8 +86,6 @@ end
 ---@param context atlas.pipeline.RunningContext
 ---@param pipe_fd any
 local function results_collector(context, pipe_fd)
-    local entry_sep = context.output_kind == PipeOutput.JsonLines and "\n" or "\0"
-
     local wrap = vim.loop.new_pipe()
     wrap:open(pipe_fd)
     wrap:read_start(function(err, data)
@@ -101,81 +99,76 @@ local function results_collector(context, pipe_fd)
             return
         end
 
-        -- Count how many entries have been read from the pipeline, and close
-        -- the pipe if we have reached the maximum.
-        local offset = 1
-        while context.found_results < context.max_results do
-            -- TODO In JsonLines, ignore events where `type ≠ match`
-            local o = data:find(entry_sep, offset, { plain = true })
-            if o then
-                context.found_results = context.found_results + 1
-                offset = o + 1
-            else
-                break
-            end
-        end
+        data = context.pipeline_output_pending .. data
+        context.pipeline_output_pending = context.pipeline_output_parser(context, data)
 
-        if context.found_results == context.max_results then
-            -- Discard entries after the last separator.
-            if offset > 1 then
-                context.pipeline_output:put(data:sub(1, offset - 1))
-            end
+        if #context.pipeline_result.items >= context.max_results then
+            -- Truncate list. Items after `max_results` are still in the table,
+            -- but they will not be visible by `ipairs`
+            context.pipeline_result.items[context.max_results + 1] = nil
 
             context:set_reader_status(ReaderStatus.Complete)
             wrap:close()
-        else
-            context.pipeline_output:put(data)
         end
     end)
 end
 
 ---@param context atlas.pipeline.RunningContext
----@return atlas.pipeline.Result
-local function build_results(context)
-    local items = {}
-    local max_line_number = 0
+---@param data string
+---@return string
+local function pipeline_output_parse_json_lines(context, data)
+    local result = context.pipeline_result
+    local offset = 1
 
-    local max_results = context.max_results
+    while true do
+        local sep = data:find("\n", offset, true)
+        if sep == nil then
+            return data:sub(offset)
+        end
 
-    local output = context.pipeline_output:tostring()
-    context.pipeline_output:free()
+        local line = data:sub(offset, sep - 1)
+        offset = sep + 1
 
-    if context.output_kind == PipeOutput.JsonLines then
-        for line in vim.gsplit(output, "\n", { trimempty = true }) do
-            local item = vim.json.decode(line)
-            if item.type == "match" then
-                local line_number = item.data.line_number
-                table.insert(items, {
-                    file = item.data.path.text,
-                    line = line_number,
-                    text = item.data.lines.text:gsub("\n$", ""),
-                })
+        local item = vim.json.decode(line)
+        if item.type == "match" then
+            local line_number = item.data.line_number
+            local text = item.data.lines.text
 
-                if line_number ~= nil and line_number > max_line_number then
-                    max_line_number = line_number
-                end
+            if text then
+                text = text:gsub("\n$", "")
+            end
 
-                if #items >= max_results then
-                    break
-                end
+            table.insert(result.items, {
+                file = item.data.path.text,
+                line = line_number,
+                text = text,
+            })
+
+            if line_number ~= nil and line_number > result.max_line_number then
+                result.max_line_number = line_number
             end
         end
     end
+end
 
-    if context.output_kind == PipeOutput.FileNames then
-        for filename in vim.gsplit(output, "\0", { trimempty = true }) do
-            table.insert(items, { file = filename })
+---@param context atlas.pipeline.RunningContext
+---@param data string
+---@return string
+local function pipeline_output_parse_filenames(context, data)
+    local result = context.pipeline_result
+    local offset = 1
 
-            if #items >= max_results then
-                break
-            end
+    while true do
+        local sep = data:find("\0", offset, true)
+        if sep == nil then
+            return data:sub(offset)
         end
-    end
 
-    return {
-        items = items,
-        max_line_number = max_line_number,
-    }
+        local filename = data:sub(offset, sep - 1)
+        table.insert(result.items, { file = filename })
+
+        offset = sep + 1
+    end
 end
 
 ---@param context atlas.pipeline.RunningContext
@@ -207,7 +200,7 @@ local function on_exit_handler(context, pid, success)
     -- Process the output from the pipeline.
     if context.reader_status ~= ReaderStatus.Notified then
         context.reader_status = ReaderStatus.Notified
-        context.on_success(build_results(context))
+        context.on_success(context.pipeline_result)
     end
 end
 
@@ -226,16 +219,24 @@ function M.run(config, pipeline, on_success, on_error)
 
     local context = {
         max_results = config.search.max_results,
-        found_results = 0,
         running = 0,
         reader_status = ReaderStatus.Reading,
         stderr = stderr,
         process_handles = {},
-        pipeline_output = buffer.new(),
-        output_kind = pipeline.output_kind,
+        pipeline_output_pending = "",
+        pipeline_result = {
+            items = {},
+            max_line_number = 0,
+        },
         on_error = on_error,
         on_success = on_success,
     }
+
+    if pipeline.output_kind == PipeOutput.FileNames then
+        context.pipeline_output_parser = pipeline_output_parse_filenames
+    else
+        context.pipeline_output_parser = pipeline_output_parse_json_lines
+    end
 
     context = setmetatable(context, { __index = RunningContext })
 
