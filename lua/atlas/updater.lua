@@ -40,6 +40,12 @@ local function render_results(instance, result)
     vim.schedule(function()
         vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, bufdata.lines)
         vim.bo[bufnr].vartabstop = table.concat(bufdata.vartabstop, ",")
+
+        -- Update folds
+        vim.api.nvim_buf_call(instance.view.results_buffer, function()
+            vim.cmd.normal { args = { "zx" }, bang = true }
+        end)
+
     end)
 end
 

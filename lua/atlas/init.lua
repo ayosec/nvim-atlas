@@ -27,7 +27,44 @@ local InstanceMeta = {}
 ---
 --- If there is any running pipeline, it will be terminated.
 function InstanceMeta:destroy()
+    -- Ensure Normal mode on exit.
+    if vim.fn.mode() ~= "n" then
+        local k = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
+        vim.api.nvim_feedkeys(k, "n", false)
+    end
+
     require("atlas.view").destroy(self.view)
+end
+
+--- Open the files of current selection.
+---
+--- If there is any running pipeline, it will be terminated.
+function InstanceMeta:accept()
+    local selected = self:get_selected_item()
+    self:destroy()
+
+    if selected then
+        vim.cmd.drop {
+            args = { selected.path },
+            mods = { tab = vim.fn.tabpagenr() },
+        }
+    end
+end
+
+--- Return the item in the row of the current selection.
+---@return nil|atlas.view.Item
+function InstanceMeta:get_selected_item()
+    local row = vim.api.nvim_win_get_cursor(self.view.results_window)[1]
+
+    local line = vim.api.nvim_buf_get_lines(self.view.results_buffer, row - 1, row, false)
+    if not line then
+        return
+    end
+
+    local metadata = require("atlas.view.bufdata").parse_metadata(line[1])
+    if metadata then
+        return self.items_index[metadata.item_id]
+    end
 end
 
 ---@class atlas.OpenOptions
@@ -59,6 +96,8 @@ function M.open(options)
     instance.state = {}
 
     require("atlas.view.prompt").initialize_input(config, instance.view, options.initial_prompt)
+
+    require("atlas.keymap").apply_keymap(instance, instance.view.prompt_buffer, config.mappings)
 
     return instance
 end

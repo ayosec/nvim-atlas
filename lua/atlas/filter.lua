@@ -16,6 +16,7 @@ M.FilterKind = {
 
 ---@class atlas.impl.LexerToken
 ---@field negated boolean
+---@field fixed_string boolean
 ---@field value string
 
 --- Split a filter into lexer tokens.

@@ -1,5 +1,9 @@
 local M = {}
 
+---@alias atlas.KeyMapHandler fun(instance: atlas.Instance): any
+---@alias atlas.KeyMap table<string, false|atlas.KeyMapHandler>
+---@alias atlas.KeyMappings table<string[]|string, atlas.KeyMap>
+
 function M.defaults()
     ---@class atlas.Config
     local defaults = {
@@ -57,6 +61,45 @@ function M.defaults()
             ---@return string|nil
             search_dir = function() end,
         },
+
+        --- Mappings available in the prompt view.
+        ---
+        --- Keys are the mode to define the mapping (`n` for Normal, `i` for
+        --- Insert, etc). In each mode, the key is the sequence to trigger the
+        --- mapping, and the value is a function with a single `atlas.Instance`
+        --- argument.
+        ---
+        --- ```lua
+        ---   mappings = {
+        ---       i = {
+        ---           ["<C-o>"] = function(instance) ... end
+        ---       }
+        ---   }
+        --- ```
+        ---
+        --- The module `atlas.actions` provides multiple functions to build the
+        --- handlers.
+        ---
+        --- ```lua
+        ---   mappings = {
+        ---       i = {
+        ---           ["<C-o>"] = require("atlas.actions").toggle_text("example")
+        ---       }
+        ---   }
+        --- ```
+        ---
+        --- Default mappings can be disabled setting the sequence to `false`:
+        ---
+        --- ```lua
+        ---   mappings = {
+        ---       n = {
+        ---           ["<C-f>"] = false,
+        ---       }
+        ---   }
+        --- ```
+        ---
+        ---@type atlas.KeyMappings
+        mappings = {},
 
         view = {
             --- Height of the view.

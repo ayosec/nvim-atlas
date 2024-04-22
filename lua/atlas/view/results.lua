@@ -118,12 +118,8 @@ function M.__foldtext(foldstart, foldend)
     local range = string.format(" (+%d)", foldend - foldstart)
 
     local line = unpack(vim.api.nvim_buf_get_lines(0, foldstart - 1, foldstart, false))
-    if not vim.startswith(line, "##") then
-        return range
-    end
-
-    local end_metadata = line:find("##", 3)
-    return line:sub(end_metadata + 3) .. range
+    local end_metadata = line:find(" ", 1)
+    return line:sub(end_metadata + 1) .. range
 end
 
 return M
