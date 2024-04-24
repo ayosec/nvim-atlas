@@ -5,6 +5,8 @@ local actions = require("atlas.actions")
 ---@type atlas.KeyMappings
 local Default = {
     i = {
+        ["<C-r><C-f>"] = actions.expand_last_cfile(),
+        ["<C-r><C-w>"] = actions.expand_last_cword(),
     },
 
     n = {
@@ -17,7 +19,7 @@ local Default = {
         ["<Cr>"] = actions.accept(),
         ["<Down>"] = actions.selection_go(1),
         ["<Up>"] = actions.selection_go(-1),
-    }
+    },
 }
 
 --- Apply the keymap to an existing buffer.

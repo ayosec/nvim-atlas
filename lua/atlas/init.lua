@@ -15,9 +15,15 @@ function M.setup(opts)
     M.options = vim.tbl_deep_extend("force", {}, M.default_config(), opts or {})
 end
 
+---@class atlas.impl.OriginalEnvironment
+---@field cfile string
+---@field cword string
+---@field bufname string
+
 ---@class atlas.Instance
 ---@field view atlas.view.Instance
 ---@field items_index atlas.view.bufdata.ItemIndex
+---@field original_environment atlas.impl.OriginalEnvironment
 ---@field state table<string, any>
 
 ---@class atlas.Instance
@@ -78,7 +84,14 @@ function M.open(options)
         options = {}
     end
 
-    local config = options.config or vim.deepcopy(M.options)
+    ---@type atlas.impl.OriginalEnvironment
+    local original_environment = {
+        bufname = vim.api.nvim_buf_get_name(0),
+        cword = vim.fn.expand("<cword>"),
+        cfile = vim.fn.expand("<cfile>"),
+    }
+
+    local config = vim.tbl_deep_extend("force", {}, M.options, options.config or {})
 
     local instance = {}
     setmetatable(instance, { __index = InstanceMeta })
@@ -93,6 +106,7 @@ function M.open(options)
 
     instance.view = require("atlas.view").create_instance(config, on_leave, on_update)
     instance.items_index = {}
+    instance.original_environment = original_environment
     instance.state = {}
 
     require("atlas.view.prompt").initialize_input(config, instance.view, options.initial_prompt)

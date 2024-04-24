@@ -95,6 +95,7 @@ function M.initialize_input(config, instance, initial_value)
     vim.api.nvim_set_current_win(instance.prompt_window)
 
     if initial_value == nil or instance == "" then
+        vim.cmd.startinsert()
         return
     end
 

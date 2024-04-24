@@ -46,6 +46,20 @@ function M.destroy()
     end
 end
 
+---@return atlas.KeyMapHandler
+function M.expand_last_cfile()
+    return function(instance)
+        vim.api.nvim_feedkeys(instance.original_environment.cfile, "n", false)
+    end
+end
+
+---@return atlas.KeyMapHandler
+function M.expand_last_cword()
+    return function(instance)
+        vim.api.nvim_feedkeys(instance.original_environment.cword, "n", false)
+    end
+end
+
 --- Move the selection `n` rows.
 ---
 --- If `n` is negative, the selection moves upwards.
