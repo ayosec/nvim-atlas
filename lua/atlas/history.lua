@@ -5,6 +5,8 @@ local ATLAS_HISTORY = {}
 
 local init_from_global_var = false
 
+local islist = vim.islist or vim.tbl_islist
+
 ---@class atlas.impl.History
 ---@field storage string[]
 ---@field size integer
@@ -78,7 +80,7 @@ function M.new_default(size)
         -- Load the history entries from a previous session, only
         -- if it is a list.
         local prev = vim.g.ATLAS_HISTORY
-        if prev and vim.tbl_islist(prev) then
+        if prev and islist(prev) then
             ATLAS_HISTORY = vim.tbl_map(tostring, prev)
         end
 
