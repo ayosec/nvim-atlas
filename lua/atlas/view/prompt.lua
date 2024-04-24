@@ -91,10 +91,17 @@ end
 ---@param config atlas.Config
 ---@param instance atlas.view.Instance
 ---@param initial_value string|nil
-function M.initialize_input(config, instance, initial_value)
+---@param history atlas.impl.History
+function M.initialize_input(config, instance, initial_value, history)
     vim.api.nvim_set_current_win(instance.prompt_window)
 
-    if initial_value == nil or instance == "" then
+    -- Use the last entry of the history if there is no `initial_value`
+    if initial_value == nil then
+        initial_value = history:go(1)
+    end
+
+    -- No value to initialize the prompt. Just start Insert mode.
+    if initial_value == nil or initial_value == "" then
         vim.cmd.startinsert()
         return
     end
@@ -113,7 +120,7 @@ function M.initialize_input(config, instance, initial_value)
     end
 
     -- SELECT the line from beginning until the last non-blank.
-    type_keys("0v$bel<C-g>")
+    type_keys("gg0vG$hh<C-g>")
 
     -- Exit SELECT if cursor is moved.
     configure_select_mode(instance)

@@ -62,7 +62,7 @@ local function process(instance)
 
     -- Assign a unique id to ignore results from previous runs, if they
     -- are received after the results from newer runs.
-    local run_id = vim.loop.hrtime()
+    local run_id = os.time()
     instance.state.last_run_id = run_id
 
     -- Interrupt previous pipeline, if any.

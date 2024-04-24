@@ -43,6 +43,15 @@ function M.defaults()
             ---
             ---@type boolean|"smart"
             case_sensitivity = "smart",
+
+            --- Number of entries to keep in the input history.
+            ---
+            --- History is stored in a global variable, so it can be restored
+            --- in new Neovim sessions if the `shada` option contains the `!`
+            --- character. See `:help shada-!` for more details.
+            ---
+            --- If `0`, history will be disabled.
+            history_size = 20,
         },
 
         files = {

@@ -13,7 +13,9 @@ local Default = {
         ["<Esc>"] = actions.destroy(),
     },
 
-    [{ "i", "n" }] = {
+    [{ "i", "n", "s" }] = {
+        ["<C-Down>"] = actions.history_go(-1),
+        ["<C-Up>"] = actions.history_go(1),
         ["<C-c>"] = actions.destroy(),
         ["<C-f>"] = actions.toggle_fold(),
         ["<Cr>"] = actions.accept(),

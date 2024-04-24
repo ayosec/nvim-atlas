@@ -60,6 +60,29 @@ function M.expand_last_cword()
     end
 end
 
+---@param delta integer
+---@return atlas.KeyMapHandler
+function M.history_go(delta)
+    return function(instance)
+        local entry = instance.history:go(delta)
+        if entry then
+            -- Save the current prompt on the first change.
+            if instance.state.history_initial_prompt == nil then
+                instance.state.history_initial_prompt = instance:get_prompt()
+            end
+
+            instance:set_prompt(entry)
+        elseif delta < 1 then
+            -- Restore prompt if we return to it.
+            entry = instance.state.history_initial_prompt
+            if entry then
+                instance:set_prompt(entry)
+                instance.state.history_initial_prompt = nil
+            end
+        end
+    end
+end
+
 --- Move the selection `n` rows.
 ---
 --- If `n` is negative, the selection moves upwards.

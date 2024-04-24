@@ -22,6 +22,7 @@ end
 
 ---@class atlas.Instance
 ---@field view atlas.view.Instance
+---@field history atlas.impl.History
 ---@field items_index atlas.view.bufdata.ItemIndex
 ---@field original_environment atlas.impl.OriginalEnvironment
 ---@field state table<string, any>
@@ -46,7 +47,10 @@ end
 ---
 --- If there is any running pipeline, it will be terminated.
 function InstanceMeta:accept()
+    self.history:add(vim.trim(self:get_prompt()))
+
     local selected = self:get_selected_item()
+
     self:destroy()
 
     if selected then
@@ -55,6 +59,18 @@ function InstanceMeta:accept()
             mods = { tab = vim.fn.tabpagenr() },
         }
     end
+end
+
+---@return string
+function InstanceMeta:get_prompt()
+    local lines = vim.api.nvim_buf_get_lines(self.view.prompt_buffer, 0, -1, false)
+    return table.concat(lines, "\n")
+end
+
+---@param prompt string
+function InstanceMeta:set_prompt(prompt)
+    local lines = vim.split(prompt, "\n", { trimempty = true })
+    vim.api.nvim_buf_set_lines(self.view.prompt_buffer, 0, -1, false, lines)
 end
 
 --- Return the item in the row of the current selection.
@@ -91,6 +107,7 @@ function M.open(options)
         cfile = vim.fn.expand("<cfile>"),
     }
 
+    ---@type atlas.Config
     local config = vim.tbl_deep_extend("force", {}, M.options, options.config or {})
 
     local instance = {}
@@ -108,8 +125,9 @@ function M.open(options)
     instance.items_index = {}
     instance.original_environment = original_environment
     instance.state = {}
+    instance.history = require("atlas.history").new("ATLAS_HISTORY", config.search.history_size)
 
-    require("atlas.view.prompt").initialize_input(config, instance.view, options.initial_prompt)
+    require("atlas.view.prompt").initialize_input(config, instance.view, options.initial_prompt, instance.history)
 
     require("atlas.keymap").apply_keymap(instance, instance.view.prompt_buffer, config.mappings)
 
