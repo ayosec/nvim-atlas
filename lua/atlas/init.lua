@@ -125,7 +125,7 @@ function M.open(options)
     instance.items_index = {}
     instance.original_environment = original_environment
     instance.state = {}
-    instance.history = require("atlas.history").new("ATLAS_HISTORY", config.search.history_size)
+    instance.history = require("atlas.history").new_default(config.search.history_size)
 
     require("atlas.view.prompt").initialize_input(config, instance.view, options.initial_prompt, instance.history)
 

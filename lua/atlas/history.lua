@@ -1,15 +1,12 @@
 local M = {}
 
-local viml = vim.api.nvim_eval
+---@type string[]
+local ATLAS_HISTORY = {}
 
----@param var_name string
----@return integer
-local function list_len(var_name)
-    return viml(string.format([[exists("g:%s") ? len(g:%s) : 0]], var_name, var_name))
-end
+local init_from_global_var = false
 
 ---@class atlas.impl.History
----@field var_name string
+---@field storage string[]
 ---@field size integer
 ---@field cursor integer
 
@@ -18,33 +15,30 @@ local History = {}
 
 ---@param entry string
 function History:add(entry)
-    if self.var_name == "" then
+    if self.size < 1 then
         return
     end
 
     -- Skip the entry if the last one has the same value.
-    if viml(string.format("get(g:%s, %d)", self.var_name, -1)) == entry then
+    if #self.storage > 0 and self.storage[#self.storage] == entry then
         return
     end
 
-    vim.b.__ATLAS_ENTRY = entry
-    viml(string.format([[add(g:%s, b:__ATLAS_ENTRY)]], self.var_name))
-    vim.b.__ATLAS_ENTRY = nil
+    table.insert(self.storage, entry)
 
-    local discard = list_len(self.var_name) - self.size
-    if discard > 0 then
-        viml(string.format("remove(g:%s, 0, %d)", self.var_name, discard - 1))
+    while #self.storage > self.size do
+        table.remove(self.storage, 1)
     end
 end
 
 ---@param delta integer
 ---@return string|nil
 function History:go(delta)
-    if self.var_name == "" then
+    if self.size < 1 then
         return
     end
 
-    local hist_len = list_len(self.var_name)
+    local hist_len = #self.storage
     local hist_index = hist_len - self.cursor - delta
 
     if hist_index < 0 or hist_index >= hist_len then
@@ -53,23 +47,45 @@ function History:go(delta)
 
     self.cursor = self.cursor + delta
 
-    return viml(string.format("get(g:%s, %d)", self.var_name, hist_index))
+    return self.storage[hist_index + 1]
 end
 
----@param var_name string
+---@param storage string[]
 ---@param size integer
 ---@return atlas.impl.History
-function M.new(var_name, size)
-    if size > 0 then
-        local expr = string.format([[!exists("g:%s") || type(g:%s) != type([])]], var_name, var_name)
-        if viml(expr) == 1 then
-            vim.g[var_name] = {}
+function M.new(storage, size)
+    local h = { storage = storage, size = size, cursor = 0 }
+    return setmetatable(h, { __index = History })
+end
+
+---@param size integer
+---@return atlas.impl.History
+function M.new_default(size)
+    if not init_from_global_var then
+        -- Save history in a global variable before exiting Nvim, only
+        -- if global variables are written to the ShaDa file.
+        vim.api.nvim_create_autocmd("VimLeavePre", {
+            group = vim.api.nvim_create_augroup("Atlas/History", {}),
+            desc = "Storage Atlas history in a global variable",
+            pattern = "*",
+            callback = function()
+                if vim.tbl_contains(vim.opt.shada:get(), "!") then
+                    vim.g.ATLAS_HISTORY = ATLAS_HISTORY
+                end
+            end,
+        })
+
+        -- Load the history entries from a previous session, only
+        -- if it is a list.
+        local prev = vim.g.ATLAS_HISTORY
+        if prev and vim.tbl_islist(prev) then
+            ATLAS_HISTORY = vim.tbl_map(tostring, prev)
         end
-    else
-        var_name = ""
+
+        init_from_global_var = true
     end
 
-    local h = { var_name = var_name, size = size, cursor = 0 }
+    local h = { storage = ATLAS_HISTORY, size = size, cursor = 0 }
     return setmetatable(h, { __index = History })
 end
 
