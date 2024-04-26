@@ -14,6 +14,16 @@ local function parse_prompt(bufnr)
     return Filter.parse(input)
 end
 
+---@param bufnr any
+---@param lines string[]
+local function buf_set_lines(bufnr, lines)
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+    vim.api.nvim_exec_autocmds("TextChanged", {
+        buffer = bufnr,
+        modeline = false,
+    })
+end
+
 ---@param instance atlas.Instance
 ---@param result? atlas.pipeline.Result
 local function render_results(instance, result)
@@ -26,7 +36,7 @@ local function render_results(instance, result)
 
         instance.items_index = {}
         vim.schedule(function()
-            vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, { "" })
+            buf_set_lines(bufnr, { "" })
         end)
 
         return
@@ -39,7 +49,8 @@ local function render_results(instance, result)
     instance.items_index = bufdata.items
 
     vim.schedule(function()
-        vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, bufdata.lines)
+        buf_set_lines(bufnr, bufdata.lines)
+
         vim.bo[bufnr].vartabstop = table.concat(bufdata.vartabstop, ",")
 
         -- Update folds

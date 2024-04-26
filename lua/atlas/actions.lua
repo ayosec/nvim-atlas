@@ -1,6 +1,7 @@
 local M = {}
 
 local ItemKind = require("atlas.view").ItemKind
+local Preview = require("atlas.preview")
 local Text = require("atlas.text")
 
 ---@param instance atlas.Instance
@@ -99,6 +100,10 @@ function M.selection_go(n)
 
     return function(instance)
         exec_normal(instance, move_cmd)
+        vim.api.nvim_exec_autocmds("CursorMoved", {
+            buffer = instance.view.results_buffer,
+            modeline = false,
+        })
     end
 end
 
@@ -154,6 +159,11 @@ function M.toggle_fold()
             end
         end)
     end
+end
+
+---@return atlas.KeyMapHandler
+function M.toggle_preview()
+    return Preview.toggle
 end
 
 --- Add or remove a fragment from the prompt.

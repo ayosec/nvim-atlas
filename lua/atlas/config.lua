@@ -69,6 +69,24 @@ function M.defaults()
             ---
             ---@return string|nil
             search_dir = function() end,
+
+            previewer = {
+                --- Maximum file size, in megabytes, to load in the preview window.
+                ---@type integer
+                filesize_limit = 4,
+
+                window = {
+                    --- Padding, in columns/rows, for the floating window.
+                    ---@type integer
+                    padding = 2,
+
+                    --- Border of the floating window.
+                    ---
+                    --- See `:help nvim_open_win` for the possible values.
+                    ---@type string[]|string
+                    border = "single",
+                },
+            },
         },
 
         --- Mappings available in the prompt view.

@@ -28,6 +28,7 @@ M.ItemKind = {
 ---@field prompt_window integer
 ---@field results_buffer integer
 ---@field results_window integer
+---@field file_previewer atlas.impl.FilePreviewer|nil
 ---@field autocmd_group any
 
 ---@param instance atlas.view.Instance
@@ -45,7 +46,7 @@ local function register_events(instance, on_leave, on_update)
     })
 
     -- Destroy the instance when the cursor leaves the prompt buffer.
-    vim.api.nvim_create_autocmd("BufLeave", {
+    vim.api.nvim_create_autocmd("WinLeave", {
         buffer = instance.prompt_buffer,
         group = instance.autocmd_group,
         callback = function()

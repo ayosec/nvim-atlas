@@ -1,6 +1,7 @@
 local M = {}
 
 ---@class atlas.view.geometry.Geometry
+---@field preview atlas.view.geometry.WindowOptions
 ---@field prompt atlas.view.geometry.WindowOptions
 ---@field results atlas.view.geometry.WindowOptions
 
@@ -50,7 +51,19 @@ function M.compute_ui_geometry(config)
     lines = math.max(2 + prompt_border_height, lines)
     local prompt_row = ui.height - lines - 2
 
+    local preview_win = config.files.previewer.window
+    local preview_border_rows = preview_win.border == "none" and 0 or 2
+
     return {
+        preview = {
+            col = preview_win.padding,
+            row = preview_win.padding,
+            width = ui.width - preview_win.padding * 2,
+            height = prompt_row - preview_win.padding * 2 - preview_border_rows,
+            relative = "editor",
+            style = "minimal",
+            border = preview_win.border,
+        },
         prompt = {
             col = 0,
             row = prompt_row - prompt_border_height,
@@ -75,8 +88,37 @@ end
 function M.resize_instance(instance)
     local resized = M.compute_ui_geometry(instance.config)
 
-    vim.api.nvim_win_set_config(instance.prompt_window, resized.prompt)
-    vim.api.nvim_win_set_config(instance.results_window, resized.results)
+    -- Window options to restore after updating the positions.
+    --
+    -- Windows are created with `style = "minimal"`, and it seems that
+    -- `nvim_win_set_config` will reset these options even if `style` is
+    -- not added to the arguments.
+    local restore_opts = { "cursorline", "number", "statuscolumn" }
+
+    local windows = {
+        { instance.prompt_window, resized.prompt },
+        { instance.results_window, resized.results },
+        { instance.file_previewer and instance.file_previewer.window, resized.preview },
+    }
+
+    for _, win in ipairs(windows) do
+        if win[1] then
+            local wo = vim.wo[win[1]]
+
+            -- Save options.
+            local opts = {}
+            for _, prop_name in ipairs(restore_opts) do
+                opts[prop_name] = wo[prop_name]
+            end
+
+            vim.api.nvim_win_set_config(win[1], win[2])
+
+            -- Restore options.
+            for k, v in pairs(opts) do
+                wo[k] = v
+            end
+        end
+    end
 end
 
 return M

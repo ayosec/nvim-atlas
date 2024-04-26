@@ -47,6 +47,7 @@ function InstanceMeta:destroy(history_add)
     end
 
     require("atlas.view").destroy(self.view)
+    require("atlas.preview").destroy(self)
 end
 
 --- Open the files of current selection.
