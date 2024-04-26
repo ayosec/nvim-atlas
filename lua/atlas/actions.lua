@@ -111,7 +111,7 @@ function M.send_qflist()
         for _, item in ipairs(instance.items_index) do
             if vim.tbl_isempty(item.children) then
                 local qf_item = {
-                    filename = item.path,
+                    filename = instance:item_path(item),
                     lnum = item.line,
                     text = item.text,
                 }

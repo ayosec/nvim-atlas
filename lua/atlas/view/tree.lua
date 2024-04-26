@@ -100,7 +100,9 @@ local function append_node(parent, parent_path, result)
 
     if parent_path ~= "" then
         local prefix = parent_path .. "/"
-        assert(vim.startswith(relative_path, prefix))
+        if not vim.startswith(relative_path, prefix) then
+            error("Prefix " .. vim.inspect(prefix) .. " not in " .. vim.inspect(relative_path))
+        end
 
         relative_path = relative_path:sub(#prefix + 1)
     end

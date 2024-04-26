@@ -5,6 +5,7 @@ local buffer = require("string.buffer")
 local M = {}
 
 ---@class atlas.pipeline.Result
+---@field search_dir string
 ---@field items atlas.pipeline.ResultItem[]
 ---@field max_line_number integer
 
@@ -19,6 +20,7 @@ local M = {}
 ---@field buffer string.buffer
 
 ---@class atlas.pipeline.RunningContext
+---@field search_dir string
 ---@field max_results integer
 ---@field running integer
 ---@field reader_status atlas.pipeline.ReaderStatus
@@ -213,11 +215,13 @@ end
 ---@param on_error fun(stderr: string)
 ---@return atlas.pipeline.RunningContext
 function M.run(config, pipeline, on_success, on_error)
-    local search_dir = config.files.search_dir()
+    ---@type string
+    local search_dir = vim.fn.fnamemodify(config.files.search_dir() or ".", ":p")
 
     local stderr = stderr_collector()
 
     local context = {
+        search_dir = search_dir,
         max_results = config.search.max_results,
         running = 0,
         reader_status = ReaderStatus.Reading,
@@ -225,6 +229,7 @@ function M.run(config, pipeline, on_success, on_error)
         process_handles = {},
         pipeline_output_pending = "",
         pipeline_result = {
+            search_dir = search_dir,
             items = {},
             max_line_number = 0,
         },
@@ -248,16 +253,13 @@ function M.run(config, pipeline, on_success, on_error)
         local spawn_args = {
             args = vim.list_slice(command, 2),
             hide = true,
+            cwd = search_dir,
             stdio = {
                 last_pipe_fd,
                 stdio_pipe.write,
                 stderr.fd_write,
             },
         }
-
-        if search_dir ~= nil then
-            spawn_args.cwd = search_dir
-        end
 
         local handle, pid
         handle, pid = vim.loop.spawn(command[1], spawn_args, function(code, signal)

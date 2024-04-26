@@ -24,6 +24,7 @@ end
 ---@field view atlas.view.Instance
 ---@field history atlas.impl.History
 ---@field items_index atlas.view.bufdata.ItemIndex
+---@field search_dir string
 ---@field original_environment atlas.impl.OriginalEnvironment
 ---@field state table<string, any>
 
@@ -58,7 +59,7 @@ function InstanceMeta:accept()
 
     if selected then
         vim.cmd.drop {
-            args = { selected.path },
+            args = { vim.fn.fnameescape(self:item_path(selected)) },
             mods = { tab = vim.fn.tabpagenr() },
         }
     end
@@ -96,6 +97,15 @@ function InstanceMeta:get_selected_item()
     if metadata then
         return self.items_index[metadata.item_id]
     end
+end
+
+--- Path for an item, relative to the current directory.
+---
+---@param item atlas.view.Item
+---@return string
+function InstanceMeta:item_path(item)
+    local path = string.format("%s/%s", self.search_dir, item.path)
+    return vim.fn.fnamemodify(vim.fn.simplify(path), ":.")
 end
 
 ---@class atlas.OpenOptions

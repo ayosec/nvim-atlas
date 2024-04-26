@@ -35,6 +35,7 @@ local function render_results(instance, result)
     local tree = Tree.build(result)
     local bufdata = BufData.render(instance.view.config, tree, result.max_line_number)
 
+    instance.search_dir = result.search_dir
     instance.items_index = bufdata.items
 
     vim.schedule(function()

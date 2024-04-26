@@ -76,6 +76,7 @@ describe("UI Tree", function()
         }
 
         local tree = Tree.build {
+            search_dir = "/dir",
             items = items,
             max_line_number = 0,
         }
@@ -125,6 +126,7 @@ describe("UI Tree", function()
         }
 
         local tree = Tree.build {
+            search_dir = "/dir",
             items = items,
             max_line_number = 35,
         }
