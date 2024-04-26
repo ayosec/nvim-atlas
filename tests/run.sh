@@ -30,7 +30,7 @@ runtest=(
 # Executes all specs if ATLAS_SPECS is empty.
 if [ -z "${ATLAS_SPECS:-}" ]
 then
-    exec "${runtest[@]}" -c "PlenaryBustedDirectory tests/specs { minimal_init = './tests/init.lua' }"
+    exec "${runtest[@]}" -c "PlenaryBustedDirectory tests/specs { minimal_init = './tests/init.lua', sequential = true }"
 fi
 
 
@@ -61,7 +61,7 @@ done
 mapfile -t files < <(find tests/specs -name '*_spec.lua' \( "${findpaths[@]}" \))
 for filename in "${files[@]}"
 do
-    if ! "${runtest[@]}" -c "PlenaryBustedFile $filename"
+    if ! "${runtest[@]}" -c "lua require('plenary.test_harness').test_file([[$filename]], { sequential = true })"
     then
         exitcode=1
     fi
