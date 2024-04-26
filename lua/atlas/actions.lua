@@ -107,6 +107,40 @@ function M.selection_go(n)
     end
 end
 
+---@param scope "all"|"current"
+---@return atlas.KeyMapHandler
+function M.selection_toggle_mark(scope)
+    return function(instance)
+        local marks = instance.marks
+
+        if scope == "all" then
+            marks.all = not marks.all
+            local marked = marks.all
+
+            for id, item in pairs(instance.items_index) do
+                if vim.tbl_isempty(item.children) then
+                    marks.items[id] = marked
+                end
+            end
+        end
+
+        if scope == "current" then
+            local item, id = instance:get_selected_item()
+            if id and item and vim.tbl_isempty(item.children) then
+                if marks.items[id] then
+                    marks.items[id] = nil
+                else
+                    marks.items[id] = true
+                end
+            end
+
+            M.selection_go(1)(instance)
+        end
+
+        vim.cmd.redraw { bang = true }
+    end
+end
+
 --- Send the current tree to the quickfix list.
 ---
 ---@return atlas.KeyMapHandler

@@ -20,9 +20,14 @@ end
 ---@field cword string
 ---@field bufname string
 
+---@class atlas.impl.Marks
+---@field all boolean
+---@field items table<integer, boolean>
+
 ---@class atlas.Instance
 ---@field view atlas.view.Instance
 ---@field history atlas.impl.History
+---@field marks atlas.impl.Marks
 ---@field items_index atlas.view.bufdata.ItemIndex
 ---@field search_dir string
 ---@field original_environment atlas.impl.OriginalEnvironment
@@ -54,15 +59,43 @@ end
 ---
 --- If there is any running pipeline, it will be terminated.
 function InstanceMeta:accept()
-    local selected = self:get_selected_item()
+    local _, id = self:get_selected_item()
+
+    if id then
+        self.marks.items[id] = true
+    end
+
+    local paths = {}
+    local line_jumps = {}
+
+    for item_id, marked in pairs(self.marks.items) do
+        local item = self.items_index[item_id]
+        if marked and item then
+            local path = self:item_path(item)
+            table.insert(paths, vim.fn.fnameescape(path))
+
+            if item.line then
+                line_jumps[path] = item.line
+            end
+        end
+    end
 
     self:destroy(true)
 
-    if selected then
+    if #paths > 0 then
         vim.cmd.drop {
-            args = { vim.fn.fnameescape(self:item_path(selected)) },
+            args = paths,
             mods = { tab = vim.fn.tabpagenr() },
         }
+
+        -- Update the first window for the selected files if the
+        -- selected item has a line number
+        for path, linenum in pairs(line_jumps) do
+            local window = vim.fn.win_findbuf(vim.fn.bufnr(path))
+            if #window > 0 then
+                vim.api.nvim_win_set_cursor(window[1], { linenum, 0 })
+            end
+        end
     end
 end
 
@@ -84,11 +117,11 @@ function InstanceMeta:set_prompt(prompt)
     end)
 end
 
---- Return the item in the row of the current selection.
+--- Return the item in a specific line.
+---@param row integer
 ---@return nil|atlas.view.Item
-function InstanceMeta:get_selected_item()
-    local row = vim.api.nvim_win_get_cursor(self.view.results_window)[1]
-
+---@return nil|integer
+function InstanceMeta:get_item(row)
     local line = vim.api.nvim_buf_get_lines(self.view.results_buffer, row - 1, row, false)
     if not line then
         return
@@ -96,8 +129,16 @@ function InstanceMeta:get_selected_item()
 
     local metadata = require("atlas.view.bufdata").parse_metadata(line[1])
     if metadata then
-        return self.items_index[metadata.item_id]
+        return self.items_index[metadata.item_id], metadata.item_id
     end
+end
+
+--- Return the item in the row of the current selection.
+---@return nil|atlas.view.Item
+---@return nil|integer
+function InstanceMeta:get_selected_item()
+    local row = vim.api.nvim_win_get_cursor(self.view.results_window)[1]
+    return self:get_item(row)
 end
 
 --- Path for an item, relative to the current directory.
@@ -130,11 +171,17 @@ function M.open(options)
     ---@type atlas.Config
     local config = vim.tbl_deep_extend("force", {}, M.options, options.config or {})
 
-    local instance = {}
-    setmetatable(instance, { __index = InstanceMeta })
+    ---@type atlas.Instance
+    local instance = {
+        history = require("atlas.history").new_default(config.search.history_size),
+        marks = { all = false, items = {} },
+        items_index = {},
+        original_environment = original_environment,
+        state = {},
+    }
 
     local on_leave = function()
-        instance:destroy()
+        instance:destroy(false)
     end
 
     local on_update = function()
@@ -142,14 +189,16 @@ function M.open(options)
     end
 
     instance.view = require("atlas.view").create_instance(config, on_leave, on_update)
-    instance.items_index = {}
-    instance.original_environment = original_environment
-    instance.state = {}
-    instance.history = require("atlas.history").new_default(config.search.history_size)
+    setmetatable(instance, { __index = InstanceMeta })
 
     require("atlas.view.prompt").initialize_input(config, instance.view, options.initial_prompt, instance.history)
 
     require("atlas.keymap").apply_keymap(instance, instance.view.prompt_buffer, config.mappings)
+
+    -- Store the instance as a buffer variable, so it can be accessed in handlers.
+    vim.b[instance.view.results_buffer].AtlasInstance = function()
+        return instance
+    end
 
     return instance
 end

@@ -16,12 +16,14 @@ local Default = {
     [{ "i", "n", "s" }] = {
         ["<C-Down>"] = actions.history_go(-1),
         ["<C-Up>"] = actions.history_go(1),
+        ["<C-a>"] = actions.selection_toggle_mark("all"),
         ["<C-c>"] = actions.destroy(),
         ["<C-f>"] = actions.toggle_fold(),
         ["<C-p>"] = actions.toggle_preview(),
         ["<C-q>"] = actions.send_qflist(),
         ["<Cr>"] = actions.accept(),
         ["<Down>"] = actions.selection_go(1),
+        ["<Tab>"] = actions.selection_toggle_mark("current"),
         ["<Up>"] = actions.selection_go(-1),
     },
 }

@@ -31,6 +31,9 @@ local function render_results(instance, result)
 
     local bufnr = instance.view.results_buffer
 
+    instance.marks.items = {}
+    instance.marks.all = false
+
     if result == nil then
         -- Empty results
 

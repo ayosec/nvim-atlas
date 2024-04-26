@@ -104,11 +104,25 @@ function M.create_window(config, geometry, bufnr)
     wo.wrap = false
 
     if cfg.selection_mark ~= nil then
-        wo.statuscolumn = "%#"
-            .. cfg.selection_mark_highlight
-            .. [[#%{ v:relnum ? " " : "]]
-            .. vim.fn.escape(cfg.selection_mark, [["'\]])
-            .. [[" }]]
+        vim.w[window].AtlasStatusColumn = function(lnum, relnum)
+            local mark
+            if relnum > 0 then
+                local instance = vim.b.AtlasInstance() ---@type atlas.Instance
+                local _, id = instance:get_item(lnum)
+
+                if id and instance.marks.items[id] then
+                    mark = "+"
+                else
+                    mark = " "
+                end
+            else
+                mark = cfg.selection_mark or " "
+            end
+
+            return string.format("%%#%s#%s", cfg.selection_mark_highlight, mark)
+        end
+
+        wo.statuscolumn = [[%{%w:AtlasStatusColumn(v:lnum, v:relnum)%}]]
     end
 
     return window
