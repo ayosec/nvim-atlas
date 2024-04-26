@@ -1,6 +1,7 @@
 local M = {}
 
 local ItemKind = require("atlas.view").ItemKind
+local Text = require("atlas.text")
 
 ---@param instance atlas.Instance
 ---@param callback fun()
@@ -127,6 +128,16 @@ function M.toggle_fold()
                 vim.cmd("normal! zo")
             end
         end)
+    end
+end
+
+--- Add or remove a fragment from the prompt.
+---
+---@param fragment string
+---@return atlas.KeyMapHandler
+function M.toggle_text(fragment)
+    return function(instance)
+        instance:set_prompt(Text.toggle(instance:get_prompt(), fragment))
     end
 end
 

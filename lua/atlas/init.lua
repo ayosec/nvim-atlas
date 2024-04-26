@@ -71,6 +71,12 @@ end
 function InstanceMeta:set_prompt(prompt)
     local lines = vim.split(prompt, "\n", { trimempty = true })
     vim.api.nvim_buf_set_lines(self.view.prompt_buffer, 0, -1, false, lines)
+
+    -- Put cursor at the end of the prompt.
+    vim.schedule(function()
+        local rows = #lines
+        vim.api.nvim_win_set_cursor(self.view.prompt_window, { rows, #lines[rows] + 1 })
+    end)
 end
 
 --- Return the item in the row of the current selection.
