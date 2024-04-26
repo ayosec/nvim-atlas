@@ -33,7 +33,12 @@ local InstanceMeta = {}
 --- Delete the buffers used by this instance.
 ---
 --- If there is any running pipeline, it will be terminated.
-function InstanceMeta:destroy()
+---@param history_add boolean
+function InstanceMeta:destroy(history_add)
+    if history_add then
+        self.history:add(vim.trim(self:get_prompt()))
+    end
+
     -- Ensure Normal mode on exit.
     if vim.fn.mode() ~= "n" then
         local k = vim.api.nvim_replace_termcodes("<Esc>", true, false, true)
@@ -47,11 +52,9 @@ end
 ---
 --- If there is any running pipeline, it will be terminated.
 function InstanceMeta:accept()
-    self.history:add(vim.trim(self:get_prompt()))
-
     local selected = self:get_selected_item()
 
-    self:destroy()
+    self:destroy(true)
 
     if selected then
         vim.cmd.drop {

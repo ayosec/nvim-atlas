@@ -39,11 +39,11 @@ function M.accept()
     end
 end
 
---- Close all windows related to this instance.
+--- Close all windows for this instance.
 ---@return atlas.KeyMapHandler
 function M.destroy()
     return function(instance)
-        instance:destroy()
+        instance:destroy(false)
     end
 end
 
@@ -99,6 +99,31 @@ function M.selection_go(n)
 
     return function(instance)
         exec_normal(instance, move_cmd)
+    end
+end
+
+--- Send the current tree to the quickfix list.
+---
+---@return atlas.KeyMapHandler
+function M.send_qflist()
+    return function(instance)
+        local qf_items = {}
+        for _, item in ipairs(instance.items_index) do
+            if vim.tbl_isempty(item.children) then
+                local qf_item = {
+                    filename = item.path,
+                    lnum = item.line,
+                    text = item.text,
+                }
+
+                table.insert(qf_items, qf_item)
+            end
+        end
+
+        instance:destroy(true)
+
+        vim.fn.setqflist(qf_items, " ")
+        vim.cmd.copen()
     end
 end
 

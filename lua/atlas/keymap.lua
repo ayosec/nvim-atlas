@@ -18,6 +18,7 @@ local Default = {
         ["<C-Up>"] = actions.history_go(1),
         ["<C-c>"] = actions.destroy(),
         ["<C-f>"] = actions.toggle_fold(),
+        ["<C-q>"] = actions.send_qflist(),
         ["<Cr>"] = actions.accept(),
         ["<Down>"] = actions.selection_go(1),
         ["<Up>"] = actions.selection_go(-1),
