@@ -13,11 +13,54 @@ local function results_call(instance, callback)
 end
 
 ---@param instance atlas.Instance
----@param command string
-local function exec_normal(instance, command)
-    results_call(instance, function()
-        vim.cmd.normal { args = { command }, bang = true }
-    end)
+---@param delta integer
+---@return boolean
+local function move_cursor_row(instance, delta)
+    local view = instance.view
+
+    local num_lines = vim.api.nvim_buf_line_count(view.results_buffer)
+    local current_row = vim.api.nvim_win_get_cursor(view.results_window)[1]
+
+    local row = current_row + delta
+
+    -- Select only nodes with no children, or the start of a fold.
+    local adjdelta = delta < 0 and -1 or 1
+    while row >= 1 and row <= num_lines do
+        local fold = -1
+        vim.api.nvim_buf_call(instance.view.results_buffer, function()
+            fold = vim.fn.foldclosed(row)
+        end)
+
+        if fold > 0 then
+            if fold == row then
+                -- At the start of the fold.
+                break
+            end
+        else
+            local item = instance:get_item(row)
+            if item and (item.kind == ItemKind.Directory or vim.tbl_isempty(item.children)) then
+                break
+            end
+        end
+
+        row = row + adjdelta
+    end
+
+    row = math.min(math.max(row, 1), num_lines)
+
+    if row == current_row then
+        -- Cursor was not moved.
+        return false
+    end
+
+    vim.api.nvim_win_set_cursor(view.results_window, { row, 0 })
+
+    vim.api.nvim_exec_autocmds("CursorMoved", {
+        buffer = view.results_buffer,
+        modeline = false,
+    })
+
+    return true
 end
 
 --- If the selected entry is a directory, toggle its contents
@@ -85,25 +128,23 @@ function M.history_go(delta)
     end
 end
 
+---@param direction 1|-1
+---@return atlas.KeyMapHandler
+function M.move_pages(direction)
+    return function(instance)
+        local height = vim.api.nvim_win_get_height(instance.view.results_window)
+        move_cursor_row(instance, height * direction)
+    end
+end
+
 --- Move the selection `n` rows.
 ---
 --- If `n` is negative, the selection moves upwards.
 ---@param n integer
 ---@return atlas.KeyMapHandler
 function M.selection_go(n)
-    local move_cmd
-    if n < 0 then
-        move_cmd = string.format("%dk", -n)
-    else
-        move_cmd = string.format("%dj", n)
-    end
-
     return function(instance)
-        exec_normal(instance, move_cmd)
-        vim.api.nvim_exec_autocmds("CursorMoved", {
-            buffer = instance.view.results_buffer,
-            modeline = false,
-        })
+        move_cursor_row(instance, n)
     end
 end
 
@@ -134,7 +175,7 @@ function M.selection_toggle_mark(scope)
                 end
             end
 
-            M.selection_go(1)(instance)
+            move_cursor_row(instance, 1)
         end
 
         vim.cmd.redraw { bang = true }
@@ -187,6 +228,11 @@ function M.toggle_fold()
                 if vim.fn.foldclosed(".") == -1 then
                     -- If it is still open, another `zc` to close its parent.
                     vim.cmd("normal! zc")
+                end
+
+                -- Ensure cursor is at the start of the fold.
+                if vim.fn.foldclosed(".") ~= vim.fn.line(".") then
+                    move_cursor_row(instance, -1)
                 end
             else
                 vim.cmd("normal! zo")

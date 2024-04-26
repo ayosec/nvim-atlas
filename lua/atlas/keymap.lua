@@ -23,6 +23,8 @@ local Default = {
         ["<C-q>"] = actions.send_qflist(),
         ["<Cr>"] = actions.accept(),
         ["<Down>"] = actions.selection_go(1),
+        ["<PageDown>"] = actions.move_pages(1),
+        ["<PageUp>"] = actions.move_pages(-1),
         ["<Tab>"] = actions.selection_toggle_mark("current"),
         ["<Up>"] = actions.selection_go(-1),
     },
