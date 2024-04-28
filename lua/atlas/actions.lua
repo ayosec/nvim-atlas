@@ -4,6 +4,8 @@ local ItemKind = require("atlas.view").ItemKind
 local Preview = require("atlas.preview")
 local Text = require("atlas.text")
 
+local NS_MARKED_FILES = require("atlas.view.bufdata").NS_MARKED_FILES
+
 ---@param instance atlas.Instance
 ---@param callback fun()
 local function results_call(instance, callback)
@@ -153,32 +155,40 @@ end
 function M.selection_toggle_mark(scope)
     return function(instance)
         local marks = instance.marks
+        local bufnr = instance.view.results_buffer
+
+        local function mark(id, item, marked)
+            if vim.tbl_isempty(item.children) then
+                if marked then
+                    marks.items[id] = true
+                    vim.api.nvim_buf_set_extmark(bufnr, NS_MARKED_FILES, id - 1, 0, {
+                        id = id,
+                        line_hl_group = "AtlasResultsMarkedFile",
+                    })
+                else
+                    marks.items[id] = nil
+                    vim.api.nvim_buf_del_extmark(bufnr, NS_MARKED_FILES, id)
+                end
+            end
+        end
 
         if scope == "all" then
             marks.all = not marks.all
             local marked = marks.all
 
             for id, item_data in pairs(instance.items_index) do
-                if vim.tbl_isempty(item_data.item.children) then
-                    marks.items[id] = marked
-                end
+                mark(id, item_data.item, marked)
             end
         end
 
         if scope == "current" then
             local item, id = instance:get_selected_item()
-            if id and item and vim.tbl_isempty(item.children) then
-                if marks.items[id] then
-                    marks.items[id] = nil
-                else
-                    marks.items[id] = true
-                end
+            if id and item then
+                mark(id, item, not marks.items[id])
             end
 
             move_cursor_row(instance, 1)
         end
-
-        vim.cmd.redraw { bang = true }
     end
 end
 

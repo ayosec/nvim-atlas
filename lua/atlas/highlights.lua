@@ -30,6 +30,12 @@ function M.set_defaults()
         AtlasResultsWindow = "Normal",
     }
 
+    vim.api.nvim_set_hl(0, "AtlasResultsMarkedFile", {
+        cterm = { bold = true },
+        bold = true,
+        default = true,
+    })
+
     vim.api.nvim_set_hl(0, "AtlasResultsTreeMarker", {
         fg = "#777777",
         ctermfg = 7,

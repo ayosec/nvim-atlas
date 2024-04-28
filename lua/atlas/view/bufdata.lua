@@ -2,6 +2,8 @@ local M = {}
 
 local ItemKind = require("atlas.view").ItemKind
 
+M.NS_MARKED_FILES = vim.api.nvim_create_namespace("Atlas/Results/MarkedFiles")
+
 ---@class atlas.view.bufdata.ItemData
 ---@field id integer
 ---@field item atlas.view.Item
