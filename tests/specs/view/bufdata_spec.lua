@@ -93,7 +93,7 @@ describe("Buffer Data", function()
             },
         }
 
-        local bufdata = BufData.render(atlas.default_config(), tree, 300)
+        local bufdata = BufData.render(atlas.default_config(), tree, nil, 300)
 
         local hlD = "AtlasResultsItemDirectory"
         local hlF = "AtlasResultsItemFile"

@@ -30,6 +30,7 @@ end
 ---@field items_index atlas.view.bufdata.ItemIndex
 ---@field search_dir string
 ---@field original_environment atlas.impl.OriginalEnvironment
+---@field git_stats nil|atlas.impl.GitStats
 ---@field state table<string, any>
 
 ---@class atlas.Instance
@@ -238,6 +239,20 @@ function M.open(options)
     -- Store the instance as a buffer variable, so it can be accessed in handlers.
     vim.b[instance.view.results_buffer].AtlasInstance = function()
         return instance
+    end
+
+    -- Collect git stats.
+    if config.files.git.enabled then
+        require("atlas.git").stats(
+            config.files.search_dir(),
+            config.programs.git,
+            config.files.git.diff_arguments,
+            function(code, result)
+                if code == 0 then
+                    require("atlas.updater").set_git_stats(instance, result)
+                end
+            end
+        )
     end
 
     return instance

@@ -15,6 +15,10 @@ function M.defaults()
         user_command = "Atlas",
 
         programs = {
+            --- Path to execute the `git` program.
+            ---@type string
+            git = vim.fn.exepath("git"),
+
             --- Path to execute the `rg` program.
             ---@type string
             ripgrep = vim.fn.exepath("rg"),
@@ -51,6 +55,7 @@ function M.defaults()
             --- character. See `:help shada-!` for more details.
             ---
             --- If `0`, history will be disabled.
+            ---@type integer
             history_size = 20,
         },
 
@@ -61,12 +66,21 @@ function M.defaults()
             ---@type string[]
             exclude_always = { ".git" },
 
+            git = {
+                --- If `true`, diff stats are included in the results.
+                ---@type boolean
+                enabled = true,
+
+                --- Extra arguments to `git diff --numstat`.
+                ---@type string[]
+                diff_arguments = { "HEAD" },
+            },
+
             --- Include hidden files in the results.
             ---@type boolean
             hidden = true,
 
             --- Return the root directory for the search commands.
-            ---
             ---@return string|nil
             search_dir = function() end,
 

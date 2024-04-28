@@ -20,9 +20,11 @@ function M.set_defaults()
 
     -- Results.
     links {
-        AtlasResultsItemFile = "Normal",
+        AtlasResultsDiffAdd = "DiffAdd",
+        AtlasResultsDiffDelete = "DiffDelete",
         AtlasResultsFold = "Comment",
         AtlasResultsItemDirectory = "Directory",
+        AtlasResultsItemFile = "Normal",
         AtlasResultsMatchLineNumber = "LineNr",
         AtlasResultsMatchText = "String",
         AtlasResultsWindow = "Normal",

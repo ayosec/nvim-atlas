@@ -74,12 +74,13 @@ end
 
 ---@param config atlas.Config
 ---@param tree atlas.view.Tree
+---@param git_stats nil|atlas.impl.GitStats
 ---@param line_number_width integer
 ---@param items atlas.view.bufdata.ItemIndex
 ---@param lines string[]
 ---@param indent_prefix string
 ---@param fold_level integer
-local function walk_tree(config, tree, line_number_width, items, lines, indent_prefix, fold_level)
+local function walk_tree(config, tree, git_stats, line_number_width, items, lines, indent_prefix, fold_level)
     local margin_by_depth = config.view.results.margin_by_depth
 
     -- Indent prefix for non-last children.
@@ -175,6 +176,21 @@ local function walk_tree(config, tree, line_number_width, items, lines, indent_p
             }
         end
 
+        if git_stats and type(key) == "string" then
+            local diff = git_stats.files[item.path]
+            if diff then
+                local added = string.format("+%d", diff.added)
+                local removed = string.format("-%d", diff.removed)
+
+                row_text["010diff"] = {
+                    { string.rep(" ", git_stats.added_width - #added + 1), "None" },
+                    { added, "AtlasResultsDiffAdd" },
+                    { string.rep(" ", git_stats.removed_width - #removed + 2), "None" },
+                    { removed, "AtlasResultsDiffDelete" },
+                }
+            end
+        end
+
         -- Add the generated item to the list, and visit children nodes.
 
         ---@type atlas.view.bufdata.ItemData
@@ -192,6 +208,7 @@ local function walk_tree(config, tree, line_number_width, items, lines, indent_p
             walk_tree(
                 config,
                 item.children,
+                git_stats,
                 line_number_width,
                 items,
                 lines,
@@ -202,16 +219,18 @@ local function walk_tree(config, tree, line_number_width, items, lines, indent_p
     end
 end
 
+---@param config atlas.Config
 ---@param tree atlas.view.Tree
+---@param git_stats nil|atlas.impl.GitStats
 ---@param max_line_number integer
 ---@return atlas.view.bufdata.BufData
-function M.render(config, tree, max_line_number)
+function M.render(config, tree, git_stats, max_line_number)
     local items = {}
     local lines = {}
 
     local line_number_width = #tostring(max_line_number)
 
-    walk_tree(config, tree, line_number_width, items, lines, "", 1)
+    walk_tree(config, tree, git_stats, line_number_width, items, lines, "", 1)
 
     return {
         items = items,

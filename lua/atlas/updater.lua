@@ -38,10 +38,16 @@ local function render_results(instance, result)
     end
 
     local tree = Tree.build(result)
-    local bufdata = BufData.render(instance.view.config, tree, result.max_line_number)
+    local bufdata = BufData.render(instance.view.config, tree, instance.git_stats, result.max_line_number)
 
     instance.search_dir = result.search_dir
     instance.items_index = bufdata.items
+
+    -- Save the results if we need to rebuild the view when Git changes are
+    -- received.
+    if instance.git_stats == nil then
+        instance.state.updater_last_result = result
+    end
 
     vim.schedule(function()
         Results.set_content(bufnr, columns_gap, bufdata.lines, bufdata.items)
@@ -116,6 +122,18 @@ function M.update(instance)
             Errors.show(instance, tostring(err))
         end
     end, instance.view.config.search.update_wait_time)
+end
+
+---@param instance atlas.Instance
+---@param result atlas.impl.GitStats
+function M.set_git_stats(instance, result)
+    instance.git_stats = result
+
+    local last_result = instance.state.updater_last_result
+    if last_result then
+        render_results(instance, last_result)
+        instance.state.updater_last_result = nil
+    end
 end
 
 return M
