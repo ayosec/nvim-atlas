@@ -28,7 +28,8 @@ end
 ---@field history atlas.impl.History
 ---@field marks atlas.impl.Marks
 ---@field items_index atlas.view.bufdata.ItemIndex
----@field search_dir string
+---@field search_dir string|nil
+---@field help atlas.impl.Help
 ---@field original_environment atlas.impl.OriginalEnvironment
 ---@field git_stats nil|atlas.impl.GitStats
 ---@field state table<string, any>
@@ -53,6 +54,7 @@ function InstanceMeta:destroy(history_add)
 
     require("atlas.view").destroy(self.view)
     require("atlas.preview").destroy(self)
+    require("atlas.help").destroy(self)
 end
 
 --- Open the files of current selection.
@@ -215,6 +217,7 @@ function M.open(options)
         history = require("atlas.history").new_default(config.search.history_size),
         marks = { all = false, items = {} },
         items_index = {},
+        help = { keymap = {} },
         original_environment = original_environment,
         state = {},
     }

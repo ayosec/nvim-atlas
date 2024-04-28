@@ -8,6 +8,16 @@ local function links(items)
 end
 
 function M.set_defaults()
+    -- Help
+    links {
+        AtlasHelpColumnKey = "Function",
+        AtlasHelpColumnModes = "Keyword",
+        AtlasHelpColumnText = "Normal",
+        AtlasHelpHeader = "Title",
+        AtlasHelpLiteral = "String",
+        AtlasHelpWindow = "Normal",
+    }
+
     -- Prompt
     links {
         AtlasPromptItemFixedString = "Operator",

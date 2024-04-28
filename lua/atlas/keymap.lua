@@ -23,6 +23,7 @@ local Default = {
         ["<C-q>"] = actions.send_qflist(),
         ["<Cr>"] = actions.accept(),
         ["<Down>"] = actions.selection_go(1),
+        ["<F1>"] = actions.toggle_help(),
         ["<PageDown>"] = actions.move_pages(1),
         ["<PageUp>"] = actions.move_pages(-1),
         ["<Tab>"] = actions.selection_toggle_mark("current"),
@@ -44,15 +45,17 @@ function M.apply_keymap(instance, bufnr, keymap)
 
     local opts = { buffer = bufnr, silent = true }
 
-    for mode, seqs in pairs(keymap) do
-        for seq, handler in pairs(seqs) do
-            if handler then
+    for mode, maps in pairs(keymap) do
+        for seq, map in pairs(maps) do
+            if map then
                 vim.keymap.set(mode, seq, function()
-                    return handler(instance)
+                    return map.handler(instance)
                 end, opts)
             end
         end
     end
+
+    instance.help.keymap = keymap
 end
 
 return M

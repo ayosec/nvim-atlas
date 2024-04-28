@@ -1,6 +1,9 @@
 local M = {}
 
----@alias atlas.KeyMapHandler fun(instance: atlas.Instance): any
+---@class atlas.KeyMapHandler
+---@field handler fun(instance: atlas.Instance): any
+---@field help string|nil
+
 ---@alias atlas.KeyMap table<string, false|atlas.KeyMapHandler>
 ---@alias atlas.KeyMappings table<string[]|string, atlas.KeyMap>
 
