@@ -36,30 +36,11 @@ local function configure_select_mode(instance)
     })
 end
 
-local function default_highlights()
-    local default_links = {
-        AtlasPromptItemFixedString = "Operator",
-        AtlasPromptItemNegate = "Operator",
-        AtlasPromptItemRegex = "String",
-        AtlasPromptItemSource = "Identifier",
-        AtlasPromptPrefix = "Identifier",
-        AtlasPromptWindow = "Normal",
-    }
-
-    for from, to in pairs(default_links) do
-        if vim.fn.hlexists(from) == 0 then
-            vim.api.nvim_set_hl(0, from, { link = to })
-        end
-    end
-end
-
 --- Configure the options and the syntax for the prompt buffer.
 ---
 ---@param bufnr integer
 function M.configure_buffer(bufnr)
     vim.api.nvim_buf_call(bufnr, function()
-        default_highlights()
-
         -- Define first to set lowest priority.
         vim.cmd.syntax("match", "AtlasPromptItemOther", [[/\S\+/]])
 

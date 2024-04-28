@@ -13,6 +13,8 @@ end
 ---@param opts? atlas.Config
 function M.setup(opts)
     M.options = vim.tbl_deep_extend("force", {}, M.default_config(), opts or {})
+
+    require("atlas.highlights").set_defaults()
 end
 
 ---@class atlas.impl.OriginalEnvironment

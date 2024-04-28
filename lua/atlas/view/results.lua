@@ -1,32 +1,10 @@
 local M = {}
 
-local function default_highlights()
-    local default_links = {
-        AtlasResultsFold = "Comment",
-        AtlasResultsItemDirectory = "Directory",
-        AtlasResultsMatchLineNumber = "LineNr",
-        AtlasResultsMatchText = "String",
-        AtlasResultsWindow = "Normal",
-    }
-
-    for from, to in pairs(default_links) do
-        vim.api.nvim_set_hl(0, from, { link = to, default = true })
-    end
-
-    vim.api.nvim_set_hl(0, "AtlasResultsTreeMarker", {
-        fg = "#777777",
-        ctermfg = 7,
-        default = true,
-    })
-end
-
 --- Configure the options and the syntax for the results buffer.
 ---
 ---@param bufnr integer
 function M.configure_buffer(bufnr)
     vim.api.nvim_buf_call(bufnr, function()
-        default_highlights()
-
         vim.opt_local.fillchars:append("fold: ")
 
         -- Create a region for each item kind.
