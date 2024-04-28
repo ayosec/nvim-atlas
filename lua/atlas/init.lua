@@ -1,7 +1,5 @@
 local M = {}
 
-M.namespace = vim.api.nvim_create_namespace("Atlas")
-
 --- @type atlas.Config
 M.options = {}
 
@@ -70,8 +68,9 @@ function InstanceMeta:accept()
     local line_jumps = {}
 
     for item_id, marked in pairs(self.marks.items) do
-        local item = self.items_index[item_id]
-        if marked and item then
+        local item_data = self.items_index[item_id]
+        if marked and item_data then
+            local item = item_data.item
             local path = self:item_path(item)
             table.insert(paths, vim.fn.fnameescape(path))
 
@@ -128,9 +127,12 @@ function InstanceMeta:get_item(row)
         return
     end
 
-    local metadata = require("atlas.view.bufdata").parse_metadata(line[1])
-    if metadata then
-        return self.items_index[metadata.item_id], metadata.item_id
+    local item_id = tonumber(string.match(line[1], "^(%d+)"))
+    if item_id then
+        local item = self.items_index[item_id].item
+        if item then
+            return item, item_id
+        end
     end
 end
 

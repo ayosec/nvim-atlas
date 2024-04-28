@@ -1,5 +1,34 @@
 local M = {}
 
+local NS = vim.api.nvim_create_namespace("Atlas/Results")
+
+---@param bufnr integer
+---@param foldstart integer
+---@param foldend integer
+local function foldtext(bufnr, foldstart, foldend)
+    local instance = vim.b[bufnr].AtlasInstance() ---@type atlas.Instance
+
+    local item = instance.items_index[foldstart]
+    if item == nil then
+        return ""
+    end
+
+    local cw = 0
+    local _, firstcol = vim.spairs(item.row_text)()
+    for _, chunk in pairs(firstcol) do
+        cw = cw + vim.api.nvim_strwidth(chunk[1])
+    end
+
+    return string.format("%s (+%d)", string.rep(" ", cw), foldend - foldstart)
+end
+
+---@class atlas.impl.RenderState
+---@field column_widths integer[]
+---@field rows table<integer, atlas.view.bufdata.Column[]>
+---@field folds table<integer, integer>
+---@field skip_lines_start integer
+---@field skip_lines_end integer
+
 --- Configure the options and the syntax for the results buffer.
 ---
 ---@param bufnr integer
@@ -7,52 +36,8 @@ function M.configure_buffer(bufnr)
     vim.api.nvim_buf_call(bufnr, function()
         vim.opt_local.fillchars:append("fold: ")
 
-        -- Create a region for each item kind.
-        for key, value in pairs(require("atlas.view").ItemKind) do
-            vim.cmd.syntax(
-                "region",
-                "AtlasResultsItem" .. key,
-                "start=|^" .. value .. "|",
-                "end=/$/",
-                "keepend",
-                "contains=AtlasResultsMetadata,AtlasResultsTreeMarker"
-            )
-        end
-
-        vim.cmd.syntax("region", "AtlasResultsMetadata", "start=/^/", "end=/ /", "conceal", "contained")
-
-        -- Line numbers: `@<line>`
-        vim.cmd.syntax(
-            "match",
-            "AtlasMatchLineNumberPre",
-            "/@/",
-            "conceal",
-            "nextgroup=AtlasResultsMatchLineNumber",
-            "containedin=AtlasResultsItemContentMatch"
-        )
-
-        vim.cmd.syntax(
-            "match",
-            "AtlasResultsMatchLineNumber",
-            [[/[0-9]\+/]],
-            "contained",
-            "nextgroup=AtlasResultsMatchTextPre"
-        )
-
-        -- Matched text: `: <text>`
-        vim.cmd.syntax(
-            "match",
-            "AtlasResultsMatchTextPre",
-            "/:/",
-            "conceal",
-            "nextgroup=AtlasResultsMatchText",
-            "containedin=AtlasResultsItemContentMatch"
-        )
-
-        -- Tree markers
-        vim.cmd.syntax("match", "AtlasResultsTreeMarker", "/[─│└├]/", "contained")
-
-        vim.cmd.syntax("region", "AtlasResultsMatchText", "start=/./", "end=/$/", "contained")
+        -- Hide everything.
+        vim.cmd.syntax("region", "AtlasResultsMetadata", "start=/^/", "end=/$/", "conceal")
     end)
 end
 
@@ -66,6 +51,10 @@ function M.create_window(config, geometry, bufnr)
     local window = vim.api.nvim_open_win(bufnr, false, geometry.results)
     local wo = vim.wo[window]
 
+    vim.w[window].AtlasFoldText = function(foldstart, foldend)
+        return foldtext(bufnr, foldstart, foldend)
+    end
+
     local winhighlight = "Normal:AtlasResultsWindow,Folded:AtlasResultsFold"
 
     if vim.fn.hlexists("AtlasResultsCursorLine") == 1 then
@@ -77,7 +66,7 @@ function M.create_window(config, geometry, bufnr)
     wo.cursorline = true
     wo.foldlevel = 32
     wo.foldmethod = "marker"
-    wo.foldtext = [[v:lua.require("atlas.view.results").__foldtext(v:foldstart, v:foldend)]]
+    wo.foldtext = [[w:AtlasFoldText(v:foldstart, v:foldend)]]
     wo.winhighlight = winhighlight
     wo.wrap = false
 
@@ -106,12 +95,55 @@ function M.create_window(config, geometry, bufnr)
     return window
 end
 
-function M.__foldtext(foldstart, foldend)
-    local range = string.format(" (+%d)", foldend - foldstart)
+---@param bufnr integer
+---@param columns_gap integer
+---@param lines string[]
+---@param items atlas.view.bufdata.ItemIndex
+function M.set_content(bufnr, columns_gap, lines, items)
+    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
-    local line = unpack(vim.api.nvim_buf_get_lines(0, foldstart - 1, foldstart, false))
-    local end_metadata = line:find(" ", 1)
-    return line:sub(end_metadata + 1) .. range
+    -- Add extmarks to display the content.
+    --
+    -- First, compute the width for each column. Then, add the chunks for
+    -- each column as virtual text.
+
+    vim.api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
+
+    local column_widths = {}
+
+    for _, item in pairs(items) do
+        for numcol, column in pairs(item.row_text) do
+            local cw = 0
+            for _, chunk in ipairs(column) do
+                cw = cw + vim.api.nvim_strwidth(chunk[1])
+            end
+
+            if cw > (column_widths[numcol] or -1) then
+                column_widths[numcol] = cw
+            end
+        end
+    end
+
+    for item_id, item in pairs(items) do
+        local text_column = 0
+        for colname, column_width in vim.spairs(column_widths) do
+            local column = item.row_text[colname]
+            if column then
+                vim.api.nvim_buf_set_extmark(bufnr, NS, item_id - 1, 0, {
+                    virt_text = column,
+                    virt_text_win_col = text_column,
+                    hl_mode = "combine",
+                })
+            end
+
+            text_column = text_column + column_width + columns_gap
+        end
+    end
+
+    vim.api.nvim_exec_autocmds("TextChanged", {
+        buffer = bufnr,
+        modeline = false,
+    })
 end
 
 return M

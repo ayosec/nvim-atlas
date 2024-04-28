@@ -20,6 +20,7 @@ function M.set_defaults()
 
     -- Results.
     links {
+        AtlasResultsItemFile = "Normal",
         AtlasResultsFold = "Comment",
         AtlasResultsItemDirectory = "Directory",
         AtlasResultsMatchLineNumber = "LineNr",

@@ -158,8 +158,8 @@ function M.selection_toggle_mark(scope)
             marks.all = not marks.all
             local marked = marks.all
 
-            for id, item in pairs(instance.items_index) do
-                if vim.tbl_isempty(item.children) then
+            for id, item_data in pairs(instance.items_index) do
+                if vim.tbl_isempty(item_data.item.children) then
                     marks.items[id] = marked
                 end
             end
@@ -188,7 +188,8 @@ end
 function M.send_qflist()
     return function(instance)
         local qf_items = {}
-        for _, item in ipairs(instance.items_index) do
+        for _, item_data in ipairs(instance.items_index) do
+            local item = item_data.item
             if vim.tbl_isempty(item.children) then
                 local qf_item = {
                     filename = instance:item_path(item),

@@ -144,6 +144,22 @@ function M.defaults()
                 ---@type boolean
                 directories_first = true,
 
+                --- Gap between columns, in characters.
+                ---@type integer
+                columns_gap = 2,
+
+                --- Function to return a list of `{highlight, text}` tuples for the
+                --- left margin of a subtree. It receives the depth level (1-based),
+                --- and is called for each file.
+                ---
+                --- If the value is an integer, the left margin is used to draw a
+                --- tree with box-drawing Unicode characters, where each filename
+                --- is preceded by the `─` character repeated the number of times
+                --- specified by this setting.
+                ---
+                ---@type integer|fun(level: integer, item: atlas.view.Item): string[][]
+                margin_by_depth = 2,
+
                 --- String to mark the current selection, or `nil` to disable
                 --- the mark.
                 ---@type string|nil
@@ -152,18 +168,6 @@ function M.defaults()
                 --- Highlight group for the mark
                 ---@type string
                 selection_mark_highlight = "Normal",
-
-                --- Function to return a string for the left margin of a subtree.
-                --- It receives the depth level (1-based), and is called for each
-                --- file.
-                ---
-                --- If the value is an integer, the left margin is used to draw a
-                --- tree with box-drawing Unicode characters, where each filename
-                --- is preceded by the `─` character repeated the number of times
-                --- specified by this setting.
-                ---
-                ---@type integer|fun(level: integer, item: atlas.view.Item): string
-                margin_by_depth = 2,
             },
 
             prompt = {

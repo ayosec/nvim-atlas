@@ -1,6 +1,5 @@
 local BufData = require("atlas.view.bufdata")
 local atlas = require("atlas")
-local testutils = require("tests.utils")
 
 local ItemKind = require("atlas.view").ItemKind
 
@@ -8,31 +7,35 @@ local ItemKind = require("atlas.view").ItemKind
 local assert_eq = assert.are.same
 
 ---@param bufdata atlas.view.bufdata.BufData
----@param label string
+---@param row_text table<string, atlas.view.bufdata.Column>
 ---@param path string
 ---@param fold_level integer|nil
-local function assert_buf_line(bufdata, label, path, fold_level)
+local function assert_buf_line(bufdata, row_text, path, fold_level)
     local line = table.remove(bufdata.lines, 1)
 
     if line == nil then
         error("No buffer line for " .. vim.inspect(path))
     end
 
-    local _, _, _, line_label = line:find("(%S+) (.+)")
+    local _, _, item_id, level = line:find("(%d+)(.*)")
+    item_id = tonumber(item_id)
 
-    if #label == 0 then
-        error("Unexpected format for path " .. vim.inspect(path) .. ": " .. vim.inspect(line))
+    if #level > 0 then
+        level = tonumber(level:gsub("{+", ""), 10)
+    else
+        level = nil
     end
 
-    local metadata = BufData.parse_metadata(line)
-    assert(metadata ~= nil)
+    local item_data = bufdata.items[item_id]
 
-    local item = bufdata.items[metadata.item_id]
+    local row_text_values = {}
+    for _, col in vim.spairs(item_data.row_text) do
+        table.insert(row_text_values, col)
+    end
 
-    assert_eq(item.path, path)
-    assert_eq(item.kind, metadata.kind)
-    assert_eq(fold_level, metadata.level)
-    assert_eq(label, line_label)
+    assert_eq(fold_level, level)
+    assert_eq(path, item_data.item.path)
+    assert_eq(row_text, row_text_values)
 end
 
 describe("Buffer Data", function()
@@ -92,25 +95,31 @@ describe("Buffer Data", function()
 
         local bufdata = BufData.render(atlas.default_config(), tree, 300)
 
-        local lines = testutils.lines([[
-            a/
-            ├── b/c/
-            │   ├── 1
-            │   └── 2
-            ├── x
-            │     @10:\tfirst match
-            │    @200:\tsecond match
-            └── y:\tmatch in y
-        ]])
+        local hlD = "AtlasResultsItemDirectory"
+        local hlF = "AtlasResultsItemFile"
+        local hlLN = "AtlasResultsMatchLineNumber"
+        local hlMT = "AtlasResultsMatchText"
+        local hlT = "AtlasResultsTreeMarker"
 
-        assert_buf_line(bufdata, lines(), "a", 1)
-        assert_buf_line(bufdata, lines(), "a/b/c", 2)
-        assert_buf_line(bufdata, lines(), "a/b/c/1", nil)
-        assert_buf_line(bufdata, lines(), "a/b/c/2", nil)
-        assert_buf_line(bufdata, lines(), "a/x", 2)
-        assert_buf_line(bufdata, lines(), "a/x", nil)
-        assert_buf_line(bufdata, lines(), "a/x", nil)
-        assert_buf_line(bufdata, lines(), "a/y", 2)
+        local lines = {
+            { { { "a/", hlD } } },
+            { { { "├── ", hlT }, { "b/c/", hlD } } },
+            { { { "│   ├── ", hlT }, { "1", hlF } } },
+            { { { "│   └── ", hlT }, { "2", hlF } } },
+            { { { "├── ", hlT }, { "x", hlF } } },
+            { { { "│   ", hlT } }, { { "  10", hlLN } }, { { "first match", hlMT } } },
+            { { { "│   ", hlT } }, { { " 200", hlLN } }, { { "second match", hlMT } } },
+            { { { "└── ", hlT }, { "y", hlF } }, { { " 300", hlLN } }, { { "match in y", hlMT } } },
+        }
+
+        assert_buf_line(bufdata, lines[1], "a", 1)
+        assert_buf_line(bufdata, lines[2], "a/b/c", 2)
+        assert_buf_line(bufdata, lines[3], "a/b/c/1", nil)
+        assert_buf_line(bufdata, lines[4], "a/b/c/2", nil)
+        assert_buf_line(bufdata, lines[5], "a/x", 2)
+        assert_buf_line(bufdata, lines[6], "a/x", nil)
+        assert_buf_line(bufdata, lines[7], "a/x", nil)
+        assert_buf_line(bufdata, lines[8], "a/y", 2)
 
         assert_eq(bufdata.lines, {})
     end)

@@ -4,6 +4,7 @@ local BufData = require("atlas.view.bufdata")
 local Errors = require("atlas.view.errors")
 local Filter = require("atlas.filter")
 local Pipeline = require("atlas.pipeline")
+local Results = require("atlas.view.results")
 local Runner = require("atlas.pipeline.runner")
 local Tree = require("atlas.view.tree")
 
@@ -14,21 +15,12 @@ local function parse_prompt(bufnr)
     return Filter.parse(input)
 end
 
----@param bufnr any
----@param lines string[]
-local function buf_set_lines(bufnr, lines)
-    vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-    vim.api.nvim_exec_autocmds("TextChanged", {
-        buffer = bufnr,
-        modeline = false,
-    })
-end
-
 ---@param instance atlas.Instance
 ---@param result? atlas.pipeline.Result
 local function render_results(instance, result)
     Errors.hide(instance)
 
+    local columns_gap = instance.view.config.view.results.columns_gap
     local bufnr = instance.view.results_buffer
 
     instance.marks.items = {}
@@ -39,7 +31,7 @@ local function render_results(instance, result)
 
         instance.items_index = {}
         vim.schedule(function()
-            buf_set_lines(bufnr, { "" })
+            Results.set_content(bufnr, columns_gap, {}, {})
         end)
 
         return
@@ -52,9 +44,7 @@ local function render_results(instance, result)
     instance.items_index = bufdata.items
 
     vim.schedule(function()
-        buf_set_lines(bufnr, bufdata.lines)
-
-        vim.bo[bufnr].vartabstop = table.concat(bufdata.vartabstop, ",")
+        Results.set_content(bufnr, columns_gap, bufdata.lines, bufdata.items)
 
         -- Update folds
         vim.api.nvim_buf_call(instance.view.results_buffer, function()

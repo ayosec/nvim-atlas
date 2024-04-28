@@ -1,43 +1,15 @@
 local M = {}
 
-local Buffer = require("string.buffer")
 local ItemKind = require("atlas.view").ItemKind
 
----@class atlas.view.bufdata.Metadata
----@field item_id integer
----@field kind string
----@field level? integer
+---@class atlas.view.bufdata.ItemData
+---@field id integer
+---@field item atlas.view.Item
+---@field row_text table<string, atlas.view.bufdata.Column>
 
---- Parse the metadata fragment of a buffer line.
----
---- The expected format is `<KIND><ID>{{{<FOLD> `.
----
----@param line string
----@return atlas.view.bufdata.Metadata|nil
-function M.parse_metadata(line)
-    local endpos = line:find(" ", 1, true)
-    if endpos == nil then
-        return nil
-    end
+---@alias atlas.view.bufdata.Column string[][]
 
-    local _, _, kind, item_id, level = line:sub(1, endpos - 1):find("(%a+)(%d+)(.*)")
-
-    item_id = tonumber(item_id)
-
-    if #level > 0 then
-        level = tonumber(level:gsub("{+", ""), 10)
-    else
-        level = nil
-    end
-
-    return {
-        item_id = item_id,
-        kind = kind,
-        level = level,
-    }
-end
-
----@alias atlas.view.bufdata.ItemIndex table<integer, atlas.view.Item>
+---@alias atlas.view.bufdata.ItemIndex table<integer, atlas.view.bufdata.ItemData>
 
 --- Iterator over the entries of a subtree.
 ---
@@ -98,7 +70,6 @@ end
 ---
 ---@class atlas.view.bufdata.BufData
 ---@field items atlas.view.bufdata.ItemIndex
----@field vartabstop integer[]
 ---@field lines string[]
 
 ---@param config atlas.Config
@@ -106,11 +77,9 @@ end
 ---@param line_number_width integer
 ---@param items atlas.view.bufdata.ItemIndex
 ---@param lines string[]
----@param vartabstop integer[]
 ---@param indent_prefix string
 ---@param fold_level integer
----@param buffer string.buffer
-local function walk_tree(config, tree, line_number_width, items, lines, vartabstop, indent_prefix, fold_level, buffer)
+local function walk_tree(config, tree, line_number_width, items, lines, indent_prefix, fold_level)
     local margin_by_depth = config.view.results.margin_by_depth
 
     -- Indent prefix for non-last children.
@@ -134,65 +103,88 @@ local function walk_tree(config, tree, line_number_width, items, lines, vartabst
     end
 
     for is_last, key, item in iter_subtree(config, tree) do
-        table.insert(items, item)
+        local item_id = #items + 1
+
+        ---@type table<string, atlas.view.bufdata.Column>
+        local row_text = {}
 
         local has_children = not vim.tbl_isempty(item.children)
-        local item_id = #items
 
-        buffer:reset()
+        -- The line in the buffer is just the identifier and the fold marker.
+        do
+            local buffer_line = tostring(item_id)
 
-        -- Metadata
-        buffer:put(item.kind, item_id)
+            if has_children or previous_has_children then
+                buffer_line = string.format("%s{{{%d", buffer_line, fold_level)
+            end
 
-        if has_children or previous_has_children then
-            buffer:put("{{{", fold_level)
+            table.insert(lines, buffer_line)
         end
 
-        buffer:put(" ")
+        -- First column: filename.
+        local filename_text = {} ---@type atlas.view.bufdata.Column
+        row_text["000name"] = filename_text
 
         if type(margin_by_depth) == "function" then
-            buffer:put(margin_by_depth(fold_level, item))
+            vim.list_extend(filename_text, margin_by_depth(fold_level, item))
         end
 
         -- Filename.
         if type(key) == "string" then
             if draw_tree and fold_level > 1 then
-                buffer:put(indent_prefix, is_last and "└" or "├", tree_hbar)
+                table.insert(filename_text, {
+                    string.format("%s%s%s", indent_prefix, is_last and "└" or "├", tree_hbar),
+                    "AtlasResultsTreeMarker",
+                })
             end
-            buffer:put(key)
 
             -- Directories always has the trailing `/`.
             if item.kind == ItemKind.Directory then
-                buffer:put("/")
+                table.insert(filename_text, { key .. "/", "AtlasResultsItemDirectory" })
+            else
+                table.insert(filename_text, { key, "AtlasResultsItemFile" })
             end
         else
             if draw_tree then
-                buffer:put(indent_prefix, " ")
-            end
-
-            if item.line ~= nil then
-                local line = tostring(item.line)
-                local padding_width = line_number_width - #line
-                local padding = padding_width > 0 and string.rep(" ", padding_width) or ""
-                buffer:putf("%s@%s", padding, line)
+                table.insert(filename_text, {
+                    indent_prefix,
+                    "AtlasResultsTreeMarker",
+                })
             end
         end
 
-        -- In order to align the matched text we need to compute the width of
-        -- the current buffer. Metadata is ignored because it is not visible.
-        local line = buffer:tostring()
-        local line_width = vim.fn.strwidth(line) + 2
+        if item.line ~= nil then
+            local line = tostring(item.line)
+            local padding_width = line_number_width - #line
+            local padding = padding_width > 0 and string.rep(" ", padding_width) or ""
 
-        if vartabstop[1] < line_width then
-            vartabstop[1] = line_width
+            row_text["100line"] = {
+                {
+                    string.format(" %s%s", padding, line),
+                    "AtlasResultsMatchLineNumber",
+                },
+            }
         end
 
         if item.text ~= nil then
-            line = string.format("%s:\t%s", line, vim.trim(item.text))
+            row_text["200text"] = {
+                {
+                    vim.trim(item.text),
+                    "AtlasResultsMatchText",
+                },
+            }
         end
 
-        -- Final line, include the metadata fragment and the label, with its prefix.
-        table.insert(lines, line)
+        -- Add the generated item to the list, and visit children nodes.
+
+        ---@type atlas.view.bufdata.ItemData
+        local item_data = {
+            id = item_id,
+            item = item,
+            row_text = row_text,
+        }
+
+        table.insert(items, item_data)
 
         if has_children then
             previous_has_children = true
@@ -203,10 +195,8 @@ local function walk_tree(config, tree, line_number_width, items, lines, vartabst
                 line_number_width,
                 items,
                 lines,
-                vartabstop,
                 is_last and subtree_prefix_last or subtree_prefix_intermediate,
-                fold_level + 1,
-                buffer
+                fold_level + 1
             )
         end
     end
@@ -218,16 +208,14 @@ end
 function M.render(config, tree, max_line_number)
     local items = {}
     local lines = {}
-    local vartabstop = { 1, 8 }
 
     local line_number_width = #tostring(max_line_number)
 
-    walk_tree(config, tree, line_number_width, items, lines, vartabstop, "", 1, Buffer.new())
+    walk_tree(config, tree, line_number_width, items, lines, "", 1)
 
     return {
         items = items,
         lines = lines,
-        vartabstop = vartabstop,
     }
 end
 
