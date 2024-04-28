@@ -18,7 +18,6 @@ end
 ---@class atlas.impl.OriginalEnvironment
 ---@field cfile string
 ---@field cword string
----@field bufname string
 
 ---@class atlas.impl.Marks
 ---@field all boolean
@@ -123,7 +122,7 @@ end
 ---@return nil|integer
 function InstanceMeta:get_item(row)
     local line = vim.api.nvim_buf_get_lines(self.view.results_buffer, row - 1, row, false)
-    if not line then
+    if not line or not line[1] then
         return
     end
 
@@ -150,6 +149,40 @@ function InstanceMeta:item_path(item)
     return vim.fn.fnamemodify(vim.fn.simplify(path), ":.")
 end
 
+---@param bufname string
+---@param instance atlas.Instance
+local function preselect_current_buffer(bufname, instance)
+    if bufname == "" then
+        return
+    end
+
+    bufname = vim.fn.fnamemodify(bufname, ":.")
+
+    -- On first update, try to put the cursor on the current buffer,
+    -- only if it is in the first 100 rows.
+
+    vim.api.nvim_create_autocmd({ "TextChanged" }, {
+        group = vim.api.nvim_create_augroup("Atlas/Results/Preselect", {}),
+        once = true,
+        buffer = instance.view.results_buffer,
+        callback = function()
+            for row = 1, 100 do
+                local item = instance:get_item(row)
+                if item == nil then
+                    break
+                end
+
+                local path = instance:item_path(item)
+
+                if path == bufname then
+                    vim.api.nvim_win_set_cursor(instance.view.results_window, { row, 0 })
+                    break
+                end
+            end
+        end,
+    })
+end
+
 ---@class atlas.OpenOptions
 ---@field config? atlas.Config
 ---@field initial_prompt? string
@@ -161,9 +194,10 @@ function M.open(options)
         options = {}
     end
 
+    local original_bufname = vim.api.nvim_buf_get_name(0)
+
     ---@type atlas.impl.OriginalEnvironment
     local original_environment = {
-        bufname = vim.api.nvim_buf_get_name(0),
         cword = vim.fn.expand("<cword>"),
         cfile = vim.fn.expand("<cfile>"),
     }
@@ -190,6 +224,8 @@ function M.open(options)
 
     instance.view = require("atlas.view").create_instance(config, on_leave, on_update)
     setmetatable(instance, { __index = InstanceMeta })
+
+    preselect_current_buffer(original_bufname, instance)
 
     require("atlas.view.prompt").initialize_input(config, instance.view, options.initial_prompt, instance.history)
 
