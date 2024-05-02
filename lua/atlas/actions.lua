@@ -1,7 +1,8 @@
 local M = {}
 
-local ItemKind = require("atlas.view").ItemKind
+local Geometry = require("atlas.view.geometry")
 local Help = require("atlas.help")
+local ItemKind = require("atlas.view").ItemKind
 local Preview = require("atlas.preview")
 local Text = require("atlas.text")
 
@@ -154,6 +155,32 @@ function M.move_pages(direction)
         handler = function(finder)
             local height = vim.api.nvim_win_get_height(finder.view.results_window)
             move_cursor_row(finder, height * direction)
+        end,
+    }
+end
+
+--- Resize the view.
+---@param delta integer
+---@return atlas.KeyMapHandler
+function M.resize(delta)
+    return {
+        help = string.format("%s view height.", delta < 0 and "Decrease" or "Increase"),
+        handler = function(finder)
+            local height = finder.view.config.view.height
+
+            if type(height) == "number" then
+                height = math.max(height + delta, 5)
+            elseif type(height) == "string" then
+                local _, _, percent = height:find("^(%d+)%%$")
+                if percent then
+                    height = string.format("%d%%", math.max(tonumber(percent) + delta, 5))
+                end
+            else
+                return
+            end
+
+            finder.view.config.view.height = height
+            Geometry.resize_instance(finder.view)
         end,
     }
 end

@@ -112,6 +112,7 @@ local function create_window(bufnr, width, height)
         relative = "editor",
         style = "minimal",
         border = "single",
+        zindex = 100,
     }
 
     local window = vim.api.nvim_open_win(bufnr, false, opts)
