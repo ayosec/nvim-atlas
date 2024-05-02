@@ -99,6 +99,7 @@ end
 ---@param columns_gap integer
 ---@param lines string[]
 ---@param items atlas.view.bufdata.ItemIndex
+---@return { row_select: integer|nil }
 function M.set_content(bufnr, columns_gap, lines, items)
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 
@@ -110,6 +111,7 @@ function M.set_content(bufnr, columns_gap, lines, items)
     vim.api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
 
     local column_widths = {}
+    local row_select = nil
 
     for _, item in pairs(items) do
         for numcol, column in pairs(item.row_text) do
@@ -138,12 +140,20 @@ function M.set_content(bufnr, columns_gap, lines, items)
 
             text_column = text_column + column_width + columns_gap
         end
+
+        if row_select == nil and vim.tbl_isempty(item.item.children) then
+            row_select = item_id
+        end
     end
 
     vim.api.nvim_exec_autocmds("TextChanged", {
         buffer = bufnr,
         modeline = false,
     })
+
+    return {
+        row_select = row_select,
+    }
 end
 
 return M

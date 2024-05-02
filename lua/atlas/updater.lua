@@ -50,11 +50,16 @@ local function render_results(finder, result)
     end
 
     vim.schedule(function()
-        Results.set_content(bufnr, columns_gap, bufdata.lines, bufdata.items)
+        local results = Results.set_content(bufnr, columns_gap, bufdata.lines, bufdata.items)
 
         -- Update folds
         vim.api.nvim_buf_call(finder.view.results_buffer, function()
             vim.cmd.normal { args = { "zx" }, bang = true }
+
+            local row = results.row_select
+            if row then
+                vim.api.nvim_win_set_cursor(finder.view.results_window, { row, 0 })
+            end
         end)
     end)
 end

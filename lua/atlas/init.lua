@@ -184,7 +184,10 @@ local function preselect_current_buffer(bufname, finder)
                 local path = finder:item_path(item)
 
                 if path == bufname then
-                    vim.api.nvim_win_set_cursor(finder.view.results_window, { row, 0 })
+                    vim.schedule(function()
+                        vim.api.nvim_win_set_cursor(finder.view.results_window, { row, 0 })
+                    end)
+
                     break
                 end
             end
