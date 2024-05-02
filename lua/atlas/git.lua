@@ -40,7 +40,9 @@ local function parse_output(output, code, on_result)
         files = files,
     }
 
-    on_result(code, result)
+    vim.schedule(function()
+        on_result(code, result)
+    end)
 end
 
 ---@class atlas.impl.GitStats

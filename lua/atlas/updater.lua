@@ -125,6 +125,20 @@ function M.update(finder)
 end
 
 ---@param finder atlas.Finder
+function M.interrupt(finder)
+    local state = finder.state
+    if state.update_wait_timer ~= nil then
+        state.update_wait_timer:stop()
+        state.update_wait_timer = nil
+    end
+
+    if state.last_pipeline_run then
+        state.last_pipeline_run:interrupt()
+        state.last_pipeline_run = nil
+    end
+end
+
+---@param finder atlas.Finder
 ---@param result atlas.impl.GitStats
 function M.set_git_stats(finder, result)
     finder.git_stats = result

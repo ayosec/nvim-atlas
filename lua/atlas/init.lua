@@ -55,6 +55,8 @@ function FinderMeta:destroy(history_add)
     require("atlas.view").destroy(self.view)
     require("atlas.preview").destroy(self)
     require("atlas.help").destroy(self)
+
+    require("atlas.updater").interrupt(self)
 end
 
 --- Open the files of current selection.
