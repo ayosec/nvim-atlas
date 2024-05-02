@@ -96,35 +96,35 @@ local function win_config(window, item)
     wo.number = has_numbers
 end
 
----@param instance atlas.Instance
+---@param finder atlas.Finder
 ---@param bufnr integer
 ---@return integer
-local function win_open(instance, bufnr)
-    local geometry = Geometry.compute_ui_geometry(instance.view.config)
+local function win_open(finder, bufnr)
+    local geometry = Geometry.compute_ui_geometry(finder.view.config)
     local window = vim.api.nvim_open_win(bufnr, false, geometry.preview)
     return window
 end
 
----@param instance atlas.Instance
-local function update_preview(instance)
-    local previewer = instance.view.file_previewer
+---@param finder atlas.Finder
+local function update_preview(finder)
+    local previewer = finder.view.file_previewer
 
     if not previewer then
         return
     end
 
-    local selected = instance:get_selected_item()
+    local selected = finder:get_selected_item()
     if not selected then
         vim.api.nvim_buf_set_lines(previewer.bufnr, 0, -1, false, { "" })
         previewer.filename = nil
         return
     end
 
-    local filename = instance:item_path(selected)
+    local filename = finder:item_path(selected)
 
     if filename ~= previewer.filename then
         -- Load a new file.
-        local bufnr = buf_create(filename, instance.view.config.files.previewer.filesize_limit)
+        local bufnr = buf_create(filename, finder.view.config.files.previewer.filesize_limit)
 
         vim.api.nvim_win_set_buf(previewer.window, bufnr)
 
@@ -139,29 +139,29 @@ local function update_preview(instance)
     win_config(previewer.window, selected)
     vim.api.nvim_win_set_cursor(previewer.window, { selected.line or 1, 0 })
 end
----@param instance atlas.Instance
-function M.toggle(instance)
-    if instance.view.file_previewer ~= nil then
-        local watcher = instance.view.file_previewer.results_watcher
+---@param finder atlas.Finder
+function M.toggle(finder)
+    if finder.view.file_previewer ~= nil then
+        local watcher = finder.view.file_previewer.results_watcher
         if watcher ~= nil then
             vim.api.nvim_del_autocmd(watcher)
         end
 
-        buf_delete(instance.view.file_previewer.bufnr)
-        instance.view.file_previewer = nil
+        buf_delete(finder.view.file_previewer.bufnr)
+        finder.view.file_previewer = nil
         return
     end
 
     -- Get file contents with :read Ex command.
     local filename = nil
-    local selected = instance:get_selected_item()
+    local selected = finder:get_selected_item()
 
     if selected then
-        filename = instance:item_path(selected)
+        filename = finder:item_path(selected)
     end
 
-    local bufnr = buf_create(filename, instance.view.config.files.previewer.filesize_limit)
-    local window = win_open(instance, bufnr)
+    local bufnr = buf_create(filename, finder.view.config.files.previewer.filesize_limit)
+    local window = win_open(finder, bufnr)
 
     if selected and selected.line then
         vim.api.nvim_win_set_cursor(window, { selected.line, 0 })
@@ -170,15 +170,15 @@ function M.toggle(instance)
     -- Track changes in the results view.
     local watcher = vim.api.nvim_create_autocmd({ "TextChanged", "CursorMoved" }, {
         group = vim.api.nvim_create_augroup("Atlas/Previewer/Watcher", {}),
-        buffer = instance.view.results_buffer,
+        buffer = finder.view.results_buffer,
         callback = function()
-            update_preview(instance)
+            update_preview(finder)
         end,
     })
 
     win_config(window, selected)
 
-    instance.view.file_previewer = {
+    finder.view.file_previewer = {
         bufnr = bufnr,
         window = window,
         filename = filename,
@@ -186,13 +186,13 @@ function M.toggle(instance)
     }
 end
 
----@param instance atlas.Instance
-function M.destroy(instance)
-    if instance.view.file_previewer == nil then
+---@param finder atlas.Finder
+function M.destroy(finder)
+    if finder.view.file_previewer == nil then
         return
     end
 
-    buf_delete(instance.view.file_previewer.bufnr)
+    buf_delete(finder.view.file_previewer.bufnr)
 end
 
 return M

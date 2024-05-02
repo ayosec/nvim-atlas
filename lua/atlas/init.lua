@@ -23,7 +23,7 @@ end
 ---@field all boolean
 ---@field items table<integer, boolean>
 
----@class atlas.Instance
+---@class atlas.Finder
 ---@field view atlas.view.Instance
 ---@field history atlas.impl.History
 ---@field marks atlas.impl.Marks
@@ -34,14 +34,14 @@ end
 ---@field git_stats nil|atlas.impl.GitStats
 ---@field state table<string, any>
 
----@class atlas.Instance
-local InstanceMeta = {}
+---@class atlas.Finder
+local FinderMeta = {}
 
 --- Delete the buffers used by this instance.
 ---
 --- If there is any running pipeline, it will be terminated.
 ---@param history_add boolean
-function InstanceMeta:destroy(history_add)
+function FinderMeta:destroy(history_add)
     if history_add then
         self.history:add(vim.trim(self:get_prompt()))
     end
@@ -60,7 +60,7 @@ end
 --- Open the files of current selection.
 ---
 --- If there is any running pipeline, it will be terminated.
-function InstanceMeta:accept()
+function FinderMeta:accept()
     local _, id = self:get_selected_item()
 
     if id then
@@ -103,13 +103,13 @@ function InstanceMeta:accept()
 end
 
 ---@return string
-function InstanceMeta:get_prompt()
+function FinderMeta:get_prompt()
     local lines = vim.api.nvim_buf_get_lines(self.view.prompt_buffer, 0, -1, false)
     return table.concat(lines, "\n")
 end
 
 ---@param prompt string
-function InstanceMeta:set_prompt(prompt)
+function FinderMeta:set_prompt(prompt)
     local lines = vim.split(prompt, "\n", { trimempty = true })
     vim.api.nvim_buf_set_lines(self.view.prompt_buffer, 0, -1, false, lines)
 
@@ -124,7 +124,7 @@ end
 ---@param row integer
 ---@return nil|atlas.view.Item
 ---@return nil|integer
-function InstanceMeta:get_item(row)
+function FinderMeta:get_item(row)
     local line = vim.api.nvim_buf_get_lines(self.view.results_buffer, row - 1, row, false)
     if not line or not line[1] then
         return
@@ -142,7 +142,7 @@ end
 --- Return the item in the row of the current selection.
 ---@return nil|atlas.view.Item
 ---@return nil|integer
-function InstanceMeta:get_selected_item()
+function FinderMeta:get_selected_item()
     local row = vim.api.nvim_win_get_cursor(self.view.results_window)[1]
     return self:get_item(row)
 end
@@ -151,14 +151,14 @@ end
 ---
 ---@param item atlas.view.Item
 ---@return string
-function InstanceMeta:item_path(item)
+function FinderMeta:item_path(item)
     local path = string.format("%s/%s", self.search_dir, item.path)
     return vim.fn.fnamemodify(vim.fn.simplify(path), ":.")
 end
 
 ---@param bufname string
----@param instance atlas.Instance
-local function preselect_current_buffer(bufname, instance)
+---@param finder atlas.Finder
+local function preselect_current_buffer(bufname, finder)
     if bufname == "" then
         return
     end
@@ -171,18 +171,18 @@ local function preselect_current_buffer(bufname, instance)
     vim.api.nvim_create_autocmd({ "TextChanged" }, {
         group = vim.api.nvim_create_augroup("Atlas/Results/Preselect", {}),
         once = true,
-        buffer = instance.view.results_buffer,
+        buffer = finder.view.results_buffer,
         callback = function()
             for row = 1, 100 do
-                local item = instance:get_item(row)
+                local item = finder:get_item(row)
                 if item == nil then
                     break
                 end
 
-                local path = instance:item_path(item)
+                local path = finder:item_path(item)
 
                 if path == bufname then
-                    vim.api.nvim_win_set_cursor(instance.view.results_window, { row, 0 })
+                    vim.api.nvim_win_set_cursor(finder.view.results_window, { row, 0 })
                     break
                 end
             end
@@ -190,13 +190,13 @@ local function preselect_current_buffer(bufname, instance)
     })
 end
 
----@class atlas.OpenOptions
+---@class atlas.FindOptions
 ---@field config? atlas.Config
 ---@field initial_prompt? string
 
----@param options? atlas.OpenOptions
----@return atlas.Instance
-function M.open(options)
+---@param options? atlas.FindOptions
+---@return atlas.Finder
+function M.find(options)
     if options == nil then
         options = {}
     end
@@ -212,8 +212,8 @@ function M.open(options)
     ---@type atlas.Config
     local config = vim.tbl_deep_extend("force", {}, M.options, options.config or {})
 
-    ---@type atlas.Instance
-    local instance = {
+    ---@type atlas.Finder
+    local finder = {
         history = require("atlas.history").new_default(config.search.history_size),
         marks = { all = false, items = {} },
         items_index = {},
@@ -223,25 +223,25 @@ function M.open(options)
     }
 
     local on_leave = function()
-        instance:destroy(false)
+        finder:destroy(false)
     end
 
     local on_update = function()
-        require("atlas.updater").update(instance)
+        require("atlas.updater").update(finder)
     end
 
-    instance.view = require("atlas.view").create_instance(config, on_leave, on_update)
-    setmetatable(instance, { __index = InstanceMeta })
+    finder.view = require("atlas.view").create_instance(config, on_leave, on_update)
+    setmetatable(finder, { __index = FinderMeta })
 
-    preselect_current_buffer(original_bufname, instance)
+    preselect_current_buffer(original_bufname, finder)
 
-    require("atlas.view.prompt").initialize_input(config, instance.view, options.initial_prompt, instance.history)
+    require("atlas.view.prompt").initialize_input(config, finder.view, options.initial_prompt, finder.history)
 
-    require("atlas.keymap").apply_keymap(instance, instance.view.prompt_buffer, config.mappings)
+    require("atlas.keymap").apply_keymap(finder, finder.view.prompt_buffer, config.mappings)
 
     -- Store the instance as a buffer variable, so it can be accessed in handlers.
-    vim.b[instance.view.results_buffer].AtlasInstance = function()
-        return instance
+    vim.b[finder.view.results_buffer].AtlasFinder = function()
+        return finder
     end
 
     -- Collect git stats.
@@ -252,13 +252,13 @@ function M.open(options)
             config.files.git.diff_arguments,
             function(code, result)
                 if code == 0 then
-                    require("atlas.updater").set_git_stats(instance, result)
+                    require("atlas.updater").set_git_stats(finder, result)
                 end
             end
         )
     end
 
-    return instance
+    return finder
 end
 
 return M

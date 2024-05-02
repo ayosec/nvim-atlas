@@ -36,10 +36,10 @@ local Default = {
 --- The mappings are combined with the default keymap, unless a specific
 --- keymap is explicitly disabled with the `false` value.
 ---
----@param instance atlas.Instance
+---@param finder atlas.Finder
 ---@param bufnr any
 ---@param keymap atlas.KeyMappings
-function M.apply_keymap(instance, bufnr, keymap)
+function M.apply_keymap(finder, bufnr, keymap)
     ---@type atlas.KeyMappings
     keymap = vim.tbl_deep_extend("force", {}, Default, keymap)
 
@@ -49,13 +49,13 @@ function M.apply_keymap(instance, bufnr, keymap)
         for seq, map in pairs(maps) do
             if map then
                 vim.keymap.set(mode, seq, function()
-                    return map.handler(instance)
+                    return map.handler(finder)
                 end, opts)
             end
         end
     end
 
-    instance.help.keymap = keymap
+    finder.help.keymap = keymap
 end
 
 return M

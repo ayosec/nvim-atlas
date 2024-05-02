@@ -15,21 +15,21 @@ local function parse_prompt(bufnr)
     return Filter.parse(input)
 end
 
----@param instance atlas.Instance
+---@param finder atlas.Finder
 ---@param result? atlas.pipeline.Result
-local function render_results(instance, result)
-    Errors.hide(instance)
+local function render_results(finder, result)
+    Errors.hide(finder)
 
-    local columns_gap = instance.view.config.view.results.columns_gap
-    local bufnr = instance.view.results_buffer
+    local columns_gap = finder.view.config.view.results.columns_gap
+    local bufnr = finder.view.results_buffer
 
-    instance.marks.items = {}
-    instance.marks.all = false
+    finder.marks.items = {}
+    finder.marks.all = false
 
     if result == nil then
         -- Empty results
 
-        instance.items_index = {}
+        finder.items_index = {}
         vim.schedule(function()
             Results.set_content(bufnr, columns_gap, {}, {})
         end)
@@ -38,101 +38,101 @@ local function render_results(instance, result)
     end
 
     local tree = Tree.build(result)
-    local bufdata = BufData.render(instance.view.config, tree, instance.git_stats, result.max_line_number)
+    local bufdata = BufData.render(finder.view.config, tree, finder.git_stats, result.max_line_number)
 
-    instance.search_dir = result.search_dir
-    instance.items_index = bufdata.items
+    finder.search_dir = result.search_dir
+    finder.items_index = bufdata.items
 
     -- Save the results if we need to rebuild the view when Git changes are
     -- received.
-    if instance.git_stats == nil then
-        instance.state.updater_last_result = result
+    if finder.git_stats == nil then
+        finder.state.updater_last_result = result
     end
 
     vim.schedule(function()
         Results.set_content(bufnr, columns_gap, bufdata.lines, bufdata.items)
 
         -- Update folds
-        vim.api.nvim_buf_call(instance.view.results_buffer, function()
+        vim.api.nvim_buf_call(finder.view.results_buffer, function()
             vim.cmd.normal { args = { "zx" }, bang = true }
         end)
     end)
 end
 
----@param instance atlas.Instance
-local function process(instance)
+---@param finder atlas.Finder
+local function process(finder)
     -- Compute the filter from the current input. If the input produces
     -- the same filter, no change is done.
-    local filter = parse_prompt(instance.view.prompt_buffer)
+    local filter = parse_prompt(finder.view.prompt_buffer)
 
-    if vim.deep_equal(instance.state.last_filter, filter) then
+    if vim.deep_equal(finder.state.last_filter, filter) then
         return
     end
 
-    instance.state.last_filter = filter
+    finder.state.last_filter = filter
 
     -- Assign a unique id to ignore results from previous runs, if they
     -- are received after the results from newer runs.
     local run_id = os.time()
-    instance.state.last_run_id = run_id
+    finder.state.last_run_id = run_id
 
     -- Interrupt previous pipeline, if any.
-    if instance.state.last_pipeline_run then
-        instance.state.last_pipeline_run:interrupt()
+    if finder.state.last_pipeline_run then
+        finder.state.last_pipeline_run:interrupt()
     end
 
     -- Run the new pipeline.
-    local config = instance.view.config
+    local config = finder.view.config
     local pipeline = Pipeline.build(filter, config)
     local run = Runner.run(config, pipeline, function(results)
-        if instance.state.last_run_id == run_id then
-            render_results(instance, results)
-            instance.state.last_pipeline_run = nil
+        if finder.state.last_run_id == run_id then
+            render_results(finder, results)
+            finder.state.last_pipeline_run = nil
         end
     end, function(stderr)
-        if instance.state.last_run_id ~= run_id then
+        if finder.state.last_run_id ~= run_id then
             return
         end
 
-        instance.state.last_pipeline_run = nil
+        finder.state.last_pipeline_run = nil
 
         if stderr == "" then
-            render_results(instance, nil)
+            render_results(finder, nil)
             return
         end
 
-        Errors.show(instance, stderr)
+        Errors.show(finder, stderr)
     end)
 
-    instance.state.last_pipeline_run = run
+    finder.state.last_pipeline_run = run
 end
 
----@param instance atlas.Instance
-function M.update(instance)
-    if instance.state.update_wait_timer ~= nil then
-        instance.state.update_wait_timer:stop()
+---@param finder atlas.Finder
+function M.update(finder)
+    if finder.state.update_wait_timer ~= nil then
+        finder.state.update_wait_timer:stop()
     end
 
-    instance.state.update_wait_timer = vim.defer_fn(function()
-        instance.state.update_wait_timer = nil
+    finder.state.update_wait_timer = vim.defer_fn(function()
+        finder.state.update_wait_timer = nil
 
-        local _, err = pcall(process, instance)
+        local _, err = pcall(process, finder)
 
         if err ~= nil then
-            Errors.show(instance, tostring(err))
+            Errors.show(finder, tostring(err))
         end
-    end, instance.view.config.search.update_wait_time)
+    end, finder.view.config.search.update_wait_time)
 end
 
----@param instance atlas.Instance
+---@param finder atlas.Finder
 ---@param result atlas.impl.GitStats
-function M.set_git_stats(instance, result)
-    instance.git_stats = result
+function M.set_git_stats(finder, result)
+    finder.git_stats = result
 
-    local last_result = instance.state.updater_last_result
+    local last_result = finder.state.updater_last_result
     if last_result then
-        render_results(instance, last_result)
-        instance.state.updater_last_result = nil
+        render_results(finder, last_result)
+        finder.state.updater_last_result = nil
     end
 end
 

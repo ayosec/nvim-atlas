@@ -1,7 +1,7 @@
 local M = {}
 
 ---@class atlas.KeyMapHandler
----@field handler fun(instance: atlas.Instance): any
+---@field handler fun(finder: atlas.Finder): any
 ---@field help string|nil
 
 ---@alias atlas.KeyMap table<string, false|atlas.KeyMapHandler>
@@ -10,7 +10,7 @@ local M = {}
 function M.defaults()
     ---@class atlas.Config
     local defaults = {
-        --- Name of the user command to open an Atlas instance.
+        --- Name of the user command to open an Atlas finder.
         ---
         --- If `nil`, no command will be created.
         ---
@@ -110,13 +110,13 @@ function M.defaults()
         ---
         --- Keys are the mode to define the mapping (`n` for Normal, `i` for
         --- Insert, etc). In each mode, the key is the sequence to trigger the
-        --- mapping, and the value is a function with a single `atlas.Instance`
+        --- mapping, and the value is a function with a single `atlas.Finder`
         --- argument.
         ---
         --- ```lua
         ---   mappings = {
         ---       i = {
-        ---           ["<C-o>"] = function(instance) ... end
+        ---           ["<C-o>"] = function(finder) ... end
         ---       }
         ---   }
         --- ```

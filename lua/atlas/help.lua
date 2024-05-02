@@ -121,12 +121,12 @@ local function create_window(bufnr, width, height)
     wo.conceallevel = 2
 end
 
----@param instance atlas.Instance
-function M.toggle(instance)
-    local help = instance.help
+---@param finder atlas.Finder
+function M.toggle(finder)
+    local help = finder.help
 
     if help.bufnr then
-        M.destroy(instance)
+        M.destroy(finder)
         return
     end
 
@@ -141,9 +141,9 @@ function M.toggle(instance)
     create_window(help.bufnr, width, #render.lines)
 end
 
----@param instance atlas.Instance
-function M.destroy(instance)
-    local help = instance.help
+---@param finder atlas.Finder
+function M.destroy(finder)
+    local help = finder.help
     if help.bufnr and vim.api.nvim_buf_is_valid(help.bufnr) then
         vim.api.nvim_buf_delete(help.bufnr, { force = true })
     end

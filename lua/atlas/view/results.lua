@@ -6,9 +6,9 @@ local NS = vim.api.nvim_create_namespace("Atlas/Results")
 ---@param foldstart integer
 ---@param foldend integer
 local function foldtext(bufnr, foldstart, foldend)
-    local instance = vim.b[bufnr].AtlasInstance() ---@type atlas.Instance
+    local finder = vim.b[bufnr].AtlasFinder() ---@type atlas.Finder
 
-    local item = instance.items_index[foldstart]
+    local item = finder.items_index[foldstart]
     if item == nil then
         return ""
     end
@@ -74,10 +74,10 @@ function M.create_window(config, geometry, bufnr)
         vim.w[window].AtlasStatusColumn = function(lnum, relnum)
             local mark
             if relnum > 0 then
-                local instance = vim.b.AtlasInstance() ---@type atlas.Instance
-                local _, id = instance:get_item(lnum)
+                local finder = vim.b.AtlasFinder() ---@type atlas.Finder
+                local _, id = finder:get_item(lnum)
 
-                if id and instance.marks.items[id] then
+                if id and finder.marks.items[id] then
                     mark = "+"
                 else
                     mark = " "

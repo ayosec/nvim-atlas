@@ -2,11 +2,11 @@ local M = {}
 
 local NS = vim.api.nvim_create_namespace("Atlas/ErrorMessages")
 
----@param instance atlas.Instance
+---@param finder atlas.Finder
 ---@param message string
-function M.show(instance, message)
+function M.show(finder, message)
     vim.schedule(function()
-        local bufnr = instance.view.results_buffer
+        local bufnr = finder.view.results_buffer
 
         -- Compute window size.
         local width = 0
@@ -55,10 +55,10 @@ function M.show(instance, message)
     end)
 end
 
----@param instance atlas.Instance
-function M.hide(instance)
+---@param finder atlas.Finder
+function M.hide(finder)
     vim.schedule(function()
-        vim.api.nvim_buf_clear_namespace(instance.view.results_buffer, NS, 0, -1)
+        vim.api.nvim_buf_clear_namespace(finder.view.results_buffer, NS, 0, -1)
     end)
 end
 

@@ -92,7 +92,7 @@ function M.create_instance(config, on_leave, on_update)
         prompt_window = prompt_window,
         results_buffer = results_buffer,
         results_window = results_window,
-        autocmd_group = vim.api.nvim_create_augroup("AtlasInstance", {}),
+        autocmd_group = vim.api.nvim_create_augroup("AtlasFinder", {}),
     }
 
     register_events(instance, on_leave, on_update)
