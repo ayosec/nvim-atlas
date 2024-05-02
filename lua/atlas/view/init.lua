@@ -21,6 +21,7 @@ M.ItemKind = {
 ---@field children atlas.view.Tree
 ---@field line? integer
 ---@field text? string
+---@field highlights? integer[][]
 
 ---@class atlas.view.Instance
 ---@field config atlas.Config

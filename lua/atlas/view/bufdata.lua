@@ -65,6 +65,72 @@ local function iter_subtree(config, tree)
     end
 end
 
+---@param item atlas.view.Item
+---@return atlas.view.bufdata.Column
+local function render_text_column(item)
+    local text = item.text
+    local highlights = item.highlights
+
+    if not text then
+        return {}
+    end
+
+    if highlights == nil or #highlights == 0 then
+        return {
+            {
+                vim.trim(text),
+                "AtlasResultsMatchText",
+            },
+        }
+    end
+
+    -- Compute how many spaces are at the beginning. Offsets must
+    -- be adjusted if we trim the string.
+
+    local start_offset = 0
+    local _, left_spaces = text:find("^(%s*)")
+
+    if left_spaces and left_spaces > 0 then
+        -- Don't trim if first highlight starts before first non-space.
+        if left_spaces <= highlights[1][1] then
+            start_offset = left_spaces
+            text = text:sub(start_offset + 1)
+        end
+    end
+
+    -- Split the text to put the highlights.
+
+    local chunks = {}
+    for _, highlight in ipairs(highlights) do
+        local start = highlight[1] - start_offset + 1
+        local end_ = highlight[2] - start_offset
+
+        if start > 1 then
+            table.insert(chunks, {
+                text:sub(1, start - 1),
+                "AtlasResultsMatchText",
+            })
+        end
+
+        table.insert(chunks, {
+            text:sub(start, end_),
+            "AtlasResultsMatchHighlight",
+        })
+
+        text = text:sub(end_ + 1)
+        start_offset = start_offset + end_
+    end
+
+    if #text > 0 then
+        table.insert(chunks, {
+            text,
+            "AtlasResultsMatchText",
+        })
+    end
+
+    return chunks
+end
+
 --- Data to build the contents of the buffer for the view.
 ---
 --- Each line contains a reference to the `items` index, the fold level,
@@ -170,12 +236,7 @@ local function walk_tree(config, tree, git_stats, line_number_width, items, line
         end
 
         if item.text ~= nil then
-            row_text["200text"] = {
-                {
-                    vim.trim(item.text),
-                    "AtlasResultsMatchText",
-                },
-            }
+            row_text["200text"] = render_text_column(item)
         end
 
         if git_stats and type(key) == "string" then

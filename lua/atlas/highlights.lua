@@ -35,6 +35,7 @@ function M.set_defaults()
         AtlasResultsFold = "Comment",
         AtlasResultsItemDirectory = "Directory",
         AtlasResultsItemFile = "Normal",
+        AtlasResultsMatchHighlight = "Search",
         AtlasResultsMatchLineNumber = "LineNr",
         AtlasResultsMatchText = "String",
         AtlasResultsWindow = "Normal",

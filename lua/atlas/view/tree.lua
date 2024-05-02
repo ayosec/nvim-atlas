@@ -154,6 +154,7 @@ local function append_node(parent, parent_path, result)
             path = result.file,
             line = result.line,
             text = result.text,
+            highlights = result.highlights,
             children = {},
         }
     end
@@ -183,6 +184,7 @@ local function append_node(parent, parent_path, result)
             file_node.kind = ContentMatch
             file_node.line = result.line
             file_node.text = result.text
+            file_node.highlights = result.highlights
         else
             -- Node with other matches.
             --

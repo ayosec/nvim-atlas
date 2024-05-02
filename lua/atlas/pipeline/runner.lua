@@ -13,6 +13,7 @@ local M = {}
 ---@field file string
 ---@field line? integer
 ---@field text? string
+---@field highlights? integer[][]
 
 ---@class atlas.impl.StderrCollector
 ---@field fd_write integer
@@ -133,6 +134,7 @@ local function pipeline_output_parse_json_lines(context, data)
 
         local item = vim.json.decode(line)
         if item.type == "match" then
+            local highlights = nil
             local line_number = item.data.line_number
             local text = item.data.lines.text
 
@@ -140,10 +142,19 @@ local function pipeline_output_parse_json_lines(context, data)
                 text = text:gsub("\n$", "")
             end
 
+            local submatches = item.data.submatches
+            if submatches ~= nil then
+                highlights = {}
+                for _, submatch in ipairs(submatches) do
+                    table.insert(highlights, { submatch.start, submatch["end"] })
+                end
+            end
+
             table.insert(result.items, {
                 file = item.data.path.text,
                 line = line_number,
                 text = text,
+                highlights = highlights,
             })
 
             if line_number ~= nil and line_number > result.max_line_number then
