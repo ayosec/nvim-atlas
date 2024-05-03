@@ -50,7 +50,6 @@ function M.show(finder, message)
             hl_group = "ErrorMsg",
             hl_eol = true,
             virt_lines = text,
-            virt_lines_leftcol = true,
         })
     end)
 end
