@@ -151,6 +151,20 @@ local function update_preview(finder)
     win_config(previewer.window, selected)
     vim.api.nvim_win_set_cursor(previewer.window, { selected.line or 1, 0 })
 end
+
+---@param finder atlas.Finder
+local function schedule_update_preview(finder)
+    if finder.state.preview_update_wait_timer ~= nil then
+        finder.state.preview_update_wait_timer:stop()
+    end
+
+    finder.state.preview_update_wait_timer = vim.defer_fn(function()
+        finder.state.preview_update_wait_timer = nil
+
+        update_preview(finder)
+    end, 50)
+end
+
 ---@param finder atlas.Finder
 function M.toggle(finder)
     if finder.view.file_previewer ~= nil then
@@ -184,7 +198,7 @@ function M.toggle(finder)
         group = vim.api.nvim_create_augroup("Atlas/Previewer/Watcher", {}),
         buffer = finder.view.results_buffer,
         callback = function()
-            update_preview(finder)
+            schedule_update_preview(finder)
         end,
     })
 
