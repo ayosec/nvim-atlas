@@ -251,15 +251,23 @@ end
 
 --- Send the current tree to the quickfix list.
 ---
+--- If there are marked files, only those are sent to the list.
+---
 ---@return atlas.KeyMapHandler
 function M.send_qflist()
     return {
         help = "Send current results to quickfix list.",
         handler = function(finder)
+            local mark_items = finder.marks.items
+            local no_marks = vim.tbl_isempty(mark_items)
+
             local qf_items = {}
-            for _, item_data in ipairs(finder.items_index) do
+            for item_id, item_data in ipairs(finder.items_index) do
                 local item = item_data.item
-                if vim.tbl_isempty(item.children) then
+
+                local may_open = no_marks or mark_items[item_id]
+
+                if may_open and vim.tbl_isempty(item.children) then
                     local qf_item = {
                         filename = finder:item_path(item),
                         lnum = item.line,
