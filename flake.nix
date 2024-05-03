@@ -15,7 +15,12 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         make-all = pkgs.writeShellScriptBin "make-all" ''
-          if make test lint fmt
+          if [ $# -eq 0 ]
+          then
+              set -- make test lint fmt
+          fi
+
+          if "$@"
           then
               c=42
           else
@@ -28,7 +33,7 @@
 
         watch = pkgs.writeShellScriptBin "watch" ''
           exec ${pkgs.watchexec}/bin/watchexec --restart --quiet -n \
-            -- ${make-all}/bin/make-all
+            -- ${make-all}/bin/make-all "$@"
         '';
 
       in {
