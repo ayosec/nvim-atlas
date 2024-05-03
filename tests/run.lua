@@ -84,6 +84,9 @@ end
 -- Plenary is used to run the tests.
 local PLENARY_PATH = get_dependency("https://github.com/nvim-lua/plenary.nvim.git", "v0.1.4")
 
+-- A copy of LuaJIT to test the search output.
+local LUAJIT_PATH = get_dependency("https://github.com/LuaJIT/LuaJIT", "v2.0.0")
+
 -- Find which `_spec` files must be executed.
 --
 -- If there are no filters, use `PlenaryBustedDirectory`.
@@ -120,6 +123,8 @@ else
 end
 
 -- Execute tests.
+
+vim.env.LUAJIT_PATH = LUAJIT_PATH
 
 local failed = false
 for _, spec_command in ipairs(SPEC_COMMANDS) do

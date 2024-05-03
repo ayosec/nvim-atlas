@@ -14,14 +14,14 @@ local channel = a.control.channel
 
 local config = atlas.default_config()
 config.files.search_dir = function()
-    return "tests/fixtures/demoproject"
+    return vim.env.LUAJIT_PATH
 end
 
 describe("Pipeline Runner", function()
     a.it("pipeline only with filenames", function()
         local tx, rx = channel.oneshot()
 
-        local specs = filter.parse("b e")
+        local specs = filter.parse("ffi -a")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(result)
@@ -29,7 +29,7 @@ describe("Pipeline Runner", function()
             assert_eq(#items, 2)
 
             local names = { items[1].file, items[2].file }
-            testutils.assert_list_contains(names, { "b/blue", "b/yellow" })
+            testutils.assert_list_contains(names, { "doc/ext_ffi.html", "src/lib_ffi.c" })
 
             tx("")
         end, function(stderr)
@@ -42,17 +42,17 @@ describe("Pipeline Runner", function()
     a.it("execute a complex pipeline", function()
         local tx, rx = channel.oneshot()
 
-        local specs = filter.parse("a*r -d -/nothing /c.*a.*t")
+        local specs = filter.parse("asm.*6 -h -/xyz /req.*bit")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(result)
             local items = result.items
             assert_eq(#items, 1)
 
-            assert_eq(items[1].file, "a/green")
-            assert_eq(items[1].line, 3)
-            assert_eq(items[1].text, "angoribus. Quocirca eodem modo sapiens erit")
-            assert_eq(items[1].highlights, { { 14, 43 } })
+            assert_eq(items[1].file, "dynasm/dasm_x86.lua")
+            assert_eq(items[1].line, 31)
+            assert_eq(items[1].text, [[local bit = bit or require("bit")]])
+            assert_eq(items[1].highlights, { { 19, 31 } })
 
             tx("")
         end, function(stderr)
@@ -65,17 +65,17 @@ describe("Pipeline Runner", function()
     a.it("execute a single-filter pipeline", function()
         local tx, rx = channel.oneshot()
 
-        local specs = filter.parse("/stoi.*irr")
+        local specs = filter.parse("/speed.*intern")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(result)
             local items = result.items
             assert_eq(#items, 1)
 
-            assert_eq(items[1].file, "b/blue")
-            assert_eq(items[1].line, 2)
-            assert_eq(items[1].text, "Stoicos irridente, statua est in eo, quod sit a")
-            assert_eq(items[1].highlights, { { 0, 11 } })
+            assert_eq(items[1].file, "doc/changes.html")
+            assert_eq(items[1].line, 493)
+            assert_eq(items[1].text, "<li>Speed up string interning.</li>")
+            assert_eq(items[1].highlights, { { 4, 26 } })
 
             tx("")
         end, function(stderr)
