@@ -39,17 +39,28 @@ local function buf_create(filename, filesize_limit_mb)
         return bufnr
     end
 
+    -- Use a `:read` command to load the file.
     vim.api.nvim_buf_call(bufnr, function()
         local mods = {
             keepjumps = true,
             silent = true,
         }
 
+        -- Remove 'a' from &cpo to avoid creating buffers with `:read`.
+        local cpo_a = vim.opt.cpoptions:get().a
+        if cpo_a then
+            vim.opt.cpoptions:remove("a")
+        end
+
         vim.cmd.read {
             args = { vim.fn.fnameescape(filename) },
             range = { 0 },
             mods = mods,
         }
+
+        if cpo_a then
+            vim.opt.cpoptions:append("a")
+        end
 
         vim.cmd.delete { range = { vim.fn.line("$") }, mods = mods }
     end)
