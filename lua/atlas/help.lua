@@ -66,6 +66,7 @@ local function create_buffer(lines, column_widths)
     local bo = vim.bo[bufnr]
     bo.bufhidden = "wipe"
     bo.buftype = "nofile"
+    bo.filetype = "AtlasHelp"
 
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 

@@ -50,6 +50,9 @@ function M.configure_buffer(bufnr)
         vim.cmd.syntax("match", "AtlasPromptItemRegex", [[=/\S\+=]])
         vim.cmd.syntax("match", "AtlasPromptItemRegex", [[=//.\+=]])
     end)
+
+    vim.api.nvim_buf_set_name(bufnr, "Atlas Finder")
+    vim.bo[bufnr].filetype = "AtlasPrompt"
 end
 
 ---@param config atlas.Config

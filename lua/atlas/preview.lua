@@ -19,6 +19,7 @@ local function buf_create(filename, filesize_limit_mb)
     local bo = vim.bo[bufnr]
     bo.bufhidden = "wipe"
     bo.buftype = "nofile"
+    bo.filetype = "AtlasPreview"
 
     if filename == nil or vim.fn.filereadable(filename) == 0 then
         return bufnr
@@ -71,7 +72,7 @@ local function buf_create(filename, filesize_limit_mb)
     }
 
     if filetype then
-        vim.bo[bufnr].filetype = filetype
+        bo.filetype = filetype
     end
 
     return bufnr

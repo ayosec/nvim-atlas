@@ -39,6 +39,8 @@ function M.configure_buffer(bufnr)
         -- Hide everything.
         vim.cmd.syntax("region", "AtlasResultsMetadata", "start=/^/", "end=/$/", "conceal")
     end)
+
+    vim.bo[bufnr].filetype = "AtlasResults"
 end
 
 ---@param config atlas.Config
