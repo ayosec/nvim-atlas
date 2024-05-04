@@ -120,7 +120,7 @@ describe("Pipeline Runner", function()
         end)
 
         -- Ripgrep should be blocked in the FIFO.
-        local pids = vim.tbl_keys(run.process_handles)
+        local pids = vim.tbl_keys(run.command_pipelines[1].process_handles)
         assert_eq(1, #pids)
         assert_eq("sleep", vim.api.nvim_get_proc(pids[1]).name)
 

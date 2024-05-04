@@ -1,6 +1,6 @@
 local PipeOutput = require("atlas.pipeline").PipeOutput
-
-local buffer = require("string.buffer")
+local Commands = require("atlas.pipeline.commands")
+local Stderr = require("atlas.pipeline.stderr")
 
 local M = {}
 
@@ -15,18 +15,13 @@ local M = {}
 ---@field text? string
 ---@field highlights? integer[][]
 
----@class atlas.impl.StderrCollector
----@field fd_write integer
----@field handle_reader uv_pipe_t
----@field buffer string.buffer
-
 ---@class atlas.pipeline.RunningContext
 ---@field search_dir string
 ---@field max_results integer
 ---@field running integer
 ---@field reader_status atlas.pipeline.ReaderStatus
----@field stderr atlas.impl.StderrCollector
----@field process_handles table<integer, uv_process_t>
+---@field stderr atlas.pipeline.StderrCollector
+---@field command_pipelines atlas.pipeline.RunningCommands[]
 ---@field pipeline_output_pending string
 ---@field pipeline_output_parser fun(context: atlas.pipeline.RunningContext, data: string):string
 ---@field pipeline_result atlas.pipeline.Result
@@ -52,73 +47,24 @@ function RunningContext:set_reader_status(status)
 end
 
 function RunningContext:interrupt()
-    for _, handle in pairs(self.process_handles) do
-        handle:kill("sigterm")
+    for _, cp in pairs(self.command_pipelines) do
+        cp:interrupt()
     end
-end
-
----@return atlas.impl.StderrCollector
-local function stderr_collector()
-    local pipes = vim.loop.pipe()
-    assert(pipes)
-
-    local output = buffer.new()
-
-    local wrapper = vim.loop.new_pipe()
-    assert(wrapper)
-
-    local function reader(err, data)
-        if err then
-            output:putf("stderr reader failed: %s\n", vim.inspect(err))
-        end
-
-        if data then
-            output:put(data)
-        else
-            wrapper:close()
-        end
-    end
-
-    wrapper:open(pipes.read)
-    wrapper:read_start(reader)
-
-    return {
-        fd_write = pipes.write,
-        handle_reader = wrapper,
-        buffer = output,
-    }
 end
 
 ---@param context atlas.pipeline.RunningContext
----@param pipe_fd any
-local function results_collector(context, pipe_fd)
-    local wrap = vim.loop.new_pipe()
-    assert(wrap)
+---@param data string
+local function results_collector(context, data)
+    data = context.pipeline_output_pending .. data
+    context.pipeline_output_pending = context.pipeline_output_parser(context, data)
 
-    wrap:open(pipe_fd)
-    wrap:read_start(function(err, data)
-        if err then
-            context:set_reader_status(ReaderStatus.Failed)
-            context.stderr.buffer:putf("stdout reader failed: %s\n", vim.inspect(err))
-        end
+    if #context.pipeline_result.items >= context.max_results then
+        -- Truncate list. Items after `max_results` are still in the table,
+        -- but they will not be visible by `ipairs`
+        context.pipeline_result.items[context.max_results + 1] = nil
 
-        if not data then
-            wrap:close()
-            return
-        end
-
-        data = context.pipeline_output_pending .. data
-        context.pipeline_output_pending = context.pipeline_output_parser(context, data)
-
-        if #context.pipeline_result.items >= context.max_results then
-            -- Truncate list. Items after `max_results` are still in the table,
-            -- but they will not be visible by `ipairs`
-            context.pipeline_result.items[context.max_results + 1] = nil
-
-            context:set_reader_status(ReaderStatus.Complete)
-            wrap:close()
-        end
-    end)
+        context:set_reader_status(ReaderStatus.Complete)
+    end
 end
 
 ---@param context atlas.pipeline.RunningContext
@@ -190,28 +136,19 @@ local function pipeline_output_parse_filenames(context, data)
 end
 
 ---@param context atlas.pipeline.RunningContext
----@param pid integer
 ---@param success boolean
-local function on_exit_handler(context, pid, success)
-    local handle = context.process_handles[pid]
-    if handle then
-        handle:close()
-        context.process_handles[pid] = nil
-    end
-
-    context.running = context.running - 1
-
+local function on_exit_handler(context, success)
     if not success then
         context:set_reader_status(ReaderStatus.Failed)
     end
 
     -- Check if the pipeline is done.
-    if context.running > 0 then
+    if context.command_pipelines[1].active > 0 then
         return
     end
 
     if context.reader_status == ReaderStatus.Failed then
-        context.on_error(context.stderr.buffer:tostring())
+        context.on_error(context.stderr:get())
         return
     end
 
@@ -234,7 +171,7 @@ function M.run(config, pipeline, on_success, on_error)
     ---@type string
     local search_dir = vim.fn.fnamemodify(config.files.search_dir() or ".", ":p")
 
-    local stderr = stderr_collector()
+    local stderr = Stderr.collector()
 
     local context = {
         search_dir = search_dir,
@@ -242,7 +179,7 @@ function M.run(config, pipeline, on_success, on_error)
         running = 0,
         reader_status = ReaderStatus.Reading,
         stderr = stderr,
-        process_handles = {},
+        command_pipelines = {},
         pipeline_output_pending = "",
         pipeline_result = {
             search_dir = search_dir,
@@ -261,44 +198,21 @@ function M.run(config, pipeline, on_success, on_error)
 
     context = setmetatable(context, { __index = RunningContext })
 
-    local last_pipe_fd = nil
+    context.command_pipelines[1] = Commands.run {
+        workdir = search_dir,
+        commands = pipeline.commands,
+        stderr = stderr,
 
-    for _, command in ipairs(pipeline.commands) do
-        local stdio_pipe = vim.loop.pipe()
-        assert(stdio_pipe)
+        on_exit = function(_, _, success)
+            on_exit_handler(context, success)
+        end,
 
-        local spawn_args = {
-            args = vim.list_slice(command, 2),
-            hide = true,
-            cwd = search_dir,
-            stdio = {
-                last_pipe_fd,
-                stdio_pipe.write,
-                stderr.fd_write,
-            },
-        }
+        on_data = function(_, data)
+            results_collector(context, data)
+        end,
+    }
 
-        local handle, pid
-        handle, pid = vim.loop.spawn(command[1], spawn_args, function(code, signal)
-            on_exit_handler(context, pid, code == 0 and signal == 0)
-        end)
-
-        context.running = context.running + 1
-        context.process_handles[pid] = handle
-
-        if last_pipe_fd ~= nil then
-            vim.loop.fs_close(last_pipe_fd)
-        end
-
-        last_pipe_fd = stdio_pipe.read
-
-        vim.loop.fs_close(stdio_pipe.write)
-    end
-
-    vim.loop.fs_close(stderr.fd_write)
-
-    -- Collect data from the last process of the pipeline.
-    results_collector(context, last_pipe_fd)
+    stderr:close_write()
 
     return context
 end
