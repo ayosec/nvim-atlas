@@ -20,6 +20,35 @@ function utils.assert_list_contains(target, items)
     end
 end
 
+--- Simulate a one-shot channel to wait for a value in a background task.
+---@generic T
+---@return fun(T)
+---@return fun(timeout?: integer):T
+function utils.oneshot()
+    local value = nil
+    local received = false
+
+    local tx = function(v)
+        assert(not received)
+        value = v
+        received = true
+    end
+
+    local rx = function(timeout)
+        vim.wait(timeout or 5000, function()
+            return received
+        end)
+
+        if not received then
+            error("Timeout")
+        end
+
+        return value
+    end
+
+    return tx, rx
+end
+
 --- Execute a program, and check that it completes successful.
 ---
 ---@param command string[]
