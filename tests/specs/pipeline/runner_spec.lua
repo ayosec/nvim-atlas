@@ -21,7 +21,7 @@ describe("Pipeline Runner", function()
     a.it("pipeline only with filenames", function()
         local tx, rx = channel.oneshot()
 
-        local specs = filter.parse("ffi -a")
+        local specs = filter.parse("ffi !a")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(result)
@@ -42,7 +42,7 @@ describe("Pipeline Runner", function()
     a.it("execute a complex pipeline", function()
         local tx, rx = channel.oneshot()
 
-        local specs = filter.parse("asm.*6 -h -/xyz /req.*bit")
+        local specs = filter.parse("asm.*6 !h !/xyz /req.*bit")
         local pl = pipeline.build(specs, config)
 
         runner.run(config, pl, function(result)

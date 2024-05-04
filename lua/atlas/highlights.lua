@@ -20,8 +20,8 @@ function M.set_defaults()
 
     -- Prompt
     links {
+        AtlasPromptItemExclude = "Operator",
         AtlasPromptItemFixedString = "Operator",
-        AtlasPromptItemNegate = "Operator",
         AtlasPromptItemRegex = "String",
         AtlasPromptItemSource = "Identifier",
         AtlasPromptPrefix = "Identifier",

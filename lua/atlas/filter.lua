@@ -10,12 +10,12 @@ M.FilterKind = {
 ---
 ---@class atlas.filter.Spec
 ---@field kind atlas.filter.Kind
----@field negated boolean
+---@field exclude boolean
 ---@field fixed_string boolean
 ---@field value string
 
 ---@class atlas.impl.LexerToken
----@field negated boolean
+---@field exclude boolean
 ---@field fixed_string boolean
 ---@field value string
 
@@ -34,12 +34,12 @@ local function lexer(filter)
         end
 
         local current
-        local negated = false
+        local exclude = false
         local fixed_string = false
 
         while input ~= "" do
-            if vim.startswith(input, "-") then
-                negated = true
+            if vim.startswith(input, "!") then
+                exclude = true
             elseif vim.startswith(input, "=") then
                 fixed_string = true
             else
@@ -58,7 +58,7 @@ local function lexer(filter)
         end
 
         return {
-            negated = negated,
+            exclude = exclude,
             fixed_string = fixed_string,
             value = current,
         }
@@ -77,7 +77,7 @@ function M.parse(filter)
         ---@type atlas.filter.Spec
         local new_spec = {
             kind = M.FilterKind.Simple,
-            negated = token.negated,
+            exclude = token.exclude,
             fixed_string = token.fixed_string,
             value = "",
         }

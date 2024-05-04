@@ -64,7 +64,7 @@ local function specialized_single_file_contents(spec, config)
 
     prepare_entrypoint(cmd, config)
 
-    if spec.negated then
+    if spec.exclude then
         output_kind = M.PipeOutput.FileNames
         table.insert(cmd, "--files-without-match")
     else
@@ -127,7 +127,7 @@ function M.build(specs, config)
                 table.insert(cmd, "--fixed-strings")
             end
 
-            if spec.negated then
+            if spec.exclude then
                 table.insert(cmd, "--invert-match")
             end
 
@@ -141,9 +141,9 @@ function M.build(specs, config)
 
     -- Filters on file contents.
     --
-    -- The first non-negated filter will be used to emit positions info.
+    -- The first non-excluded filter will be used to emit positions info.
     if #file_contents_filters > 0 then
-        local non_negated = nil
+        local non_excluded = nil
 
         for _, spec in ipairs(file_contents_filters) do
             local cmd = {
@@ -161,19 +161,19 @@ function M.build(specs, config)
                 table.insert(cmd, "--fixed-strings")
             end
 
-            if non_negated == nil and not spec.negated then
-                non_negated = cmd
+            if non_excluded == nil and not spec.exclude then
+                non_excluded = cmd
             else
-                local arg = spec.negated and "--files-without-match" or "--files-with-matches"
+                local arg = spec.exclude and "--files-without-match" or "--files-with-matches"
                 table.insert(cmd, arg)
                 table.insert(commands, cmd)
             end
         end
 
-        if non_negated ~= nil then
+        if non_excluded ~= nil then
             output_kind = M.PipeOutput.JsonLines
-            table.insert(non_negated, "--json")
-            table.insert(commands, non_negated)
+            table.insert(non_excluded, "--json")
+            table.insert(commands, non_excluded)
         end
     end
 

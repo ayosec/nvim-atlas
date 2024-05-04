@@ -40,19 +40,19 @@ end
 ---
 ---@param bufnr integer
 function M.configure_buffer(bufnr)
+    vim.api.nvim_buf_set_name(bufnr, "Atlas Finder")
+    vim.bo[bufnr].filetype = "AtlasPrompt"
+
     vim.api.nvim_buf_call(bufnr, function()
         -- Define first to set lowest priority.
         vim.cmd.syntax("match", "AtlasPromptItemOther", [[/\S\+/]])
 
+        vim.cmd.syntax("match", "AtlasPromptItemExclude", [[/\!/]])
         vim.cmd.syntax("match", "AtlasPromptItemFixedString", [[/=/]])
-        vim.cmd.syntax("match", "AtlasPromptItemNegate", [[/-/]])
 
         vim.cmd.syntax("match", "AtlasPromptItemRegex", [[=/\S\+=]])
         vim.cmd.syntax("match", "AtlasPromptItemRegex", [[=//.\+=]])
     end)
-
-    vim.api.nvim_buf_set_name(bufnr, "Atlas Finder")
-    vim.bo[bufnr].filetype = "AtlasPrompt"
 end
 
 ---@param config atlas.Config

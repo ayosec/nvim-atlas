@@ -25,7 +25,7 @@ describe("Pipeline Builder", function()
     end)
 
     it("search file contents", function()
-        local specs = Filter.parse("foo -/first /second /third -bar =fix1 -=/fix2")
+        local specs = Filter.parse("foo !/first /second /third !bar =fix1 !=/fix2")
         local pl = Pipeline.build(specs, atlas.default_config())
 
         assert_eq(pl.output_kind, Pipeline.PipeOutput.JsonLines)
