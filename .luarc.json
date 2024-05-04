@@ -5,7 +5,10 @@
         "after_each",
         "before_each",
         "describe",
-        "it",
-        "vim"
+        "it"
+    ],
+
+    "workspace.library": [
+        ".cache/lua-types"
     ]
 }

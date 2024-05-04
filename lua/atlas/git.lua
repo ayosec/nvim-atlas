@@ -58,6 +58,7 @@ function M.stats(workdir, git_command, diff_extra_args, on_result)
     local diff_args = vim.list_extend({ "diff", "--numstat", "-z" }, diff_extra_args)
 
     local stdout = vim.loop.new_pipe()
+    assert(stdout)
 
     local spawn_args = {
         args = diff_args,
@@ -71,7 +72,10 @@ function M.stats(workdir, git_command, diff_extra_args, on_result)
     local handle
     handle = vim.loop.spawn(git_command, spawn_args, function(code, _)
         parse_output(stdout_data:tostring(), code, on_result)
-        handle:close()
+
+        if handle then
+            handle:close()
+        end
     end)
 
     stdout:read_start(function(err, data)

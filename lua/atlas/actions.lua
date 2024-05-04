@@ -288,6 +288,12 @@ end
 
 ---@return atlas.KeyMapHandler
 function M.toggle_fold()
+    ---@return number
+    local function foldlevel()
+        ---@diagnostic disable-next-line:param-type-mismatch
+        return vim.fn.foldclosed(".")
+    end
+
     return {
         help = "Expand/collapse current subtree.",
         handler = function(finder)
@@ -303,16 +309,16 @@ function M.toggle_fold()
             -- - If it is not closed, close it and verify that it is closed.
 
             results_call(finder, function()
-                if vim.fn.foldclosed(".") == -1 then
+                if foldlevel() == -1 then
                     vim.cmd("normal! zc")
 
-                    if vim.fn.foldclosed(".") == -1 then
+                    if foldlevel() == -1 then
                         -- If it is still open, another `zc` to close its parent.
                         vim.cmd("normal! zc")
                     end
 
                     -- Ensure cursor is at the start of the fold.
-                    if vim.fn.foldclosed(".") ~= vim.fn.line(".") then
+                    if foldlevel() ~= vim.fn.line(".") then
                         move_cursor_row(finder, -1)
                     end
                 else

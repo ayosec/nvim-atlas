@@ -12,7 +12,7 @@ local function configure_select_mode(instance)
     -- to detect if the users moves the cursor instead of writing something
     -- to replace the existing input.
 
-    local mode_listener = nil
+    local mode_listener = -1
 
     mode_listener = vim.api.nvim_create_autocmd("ModeChanged", {
         group = instance.autocmd_group,
@@ -65,9 +65,11 @@ function M.create_window(config, geometry, bufnr)
     local window = vim.api.nvim_open_win(bufnr, true, geometry.prompt)
     local wo = vim.wo[window]
 
-    wo.statuscolumn = "%#AtlasPromptPrefix#" .. cfg.prefix
     wo.winhighlight = "Normal:AtlasPromptWindow"
     wo.wrap = false
+
+    ---@diagnostic disable-next-line:inject-field
+    wo.statuscolumn = "%#AtlasPromptPrefix#" .. cfg.prefix
 
     return window
 end

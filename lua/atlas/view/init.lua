@@ -30,7 +30,7 @@ M.ItemKind = {
 ---@field results_buffer integer
 ---@field results_window integer
 ---@field file_previewer atlas.impl.FilePreviewer|nil
----@field autocmd_group any
+---@field autocmd_group number
 
 ---@param instance atlas.view.Instance
 ---@param on_leave fun()

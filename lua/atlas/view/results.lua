@@ -33,14 +33,14 @@ end
 ---
 ---@param bufnr integer
 function M.configure_buffer(bufnr)
+    vim.bo[bufnr].filetype = "AtlasResults"
+
     vim.api.nvim_buf_call(bufnr, function()
         vim.opt_local.fillchars:append("fold: ")
 
         -- Hide everything.
         vim.cmd.syntax("region", "AtlasResultsMetadata", "start=/^/", "end=/$/", "conceal")
     end)
-
-    vim.bo[bufnr].filetype = "AtlasResults"
 end
 
 ---@param config atlas.Config
@@ -76,7 +76,10 @@ function M.create_window(config, geometry, bufnr)
         vim.w[window].AtlasStatusColumn = function(lnum, relnum)
             local mark
             if relnum > 0 then
-                local finder = vim.b.AtlasFinder() ---@type atlas.Finder
+                ---@type atlas.Finder
+                ---@diagnostic disable-next-line:undefined-field
+                local finder = vim.b.AtlasFinder()
+
                 local _, id = finder:get_item(lnum)
 
                 if id and finder.marks.items[id] then
@@ -91,6 +94,7 @@ function M.create_window(config, geometry, bufnr)
             return string.format("%%#%s#%s", cfg.selection_mark_highlight, mark)
         end
 
+        ---@diagnostic disable-next-line:inject-field
         wo.statuscolumn = [[%{%w:AtlasStatusColumn(v:lnum, v:relnum)%}]]
     end
 

@@ -118,7 +118,9 @@ function FinderMeta:set_prompt(prompt)
     -- Put cursor at the end of the prompt.
     vim.schedule(function()
         local rows = #lines
-        vim.api.nvim_win_set_cursor(self.view.prompt_window, { rows, #lines[rows] + 1 })
+        if rows > 0 then
+            vim.api.nvim_win_set_cursor(self.view.prompt_window, { rows, #lines[rows] + 1 })
+        end
     end)
 end
 

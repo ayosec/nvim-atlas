@@ -17,7 +17,7 @@ local M = {}
 
 ---@class atlas.impl.StderrCollector
 ---@field fd_write integer
----@field handle_reader any
+---@field handle_reader uv_pipe_t
 ---@field buffer string.buffer
 
 ---@class atlas.pipeline.RunningContext
@@ -26,7 +26,7 @@ local M = {}
 ---@field running integer
 ---@field reader_status atlas.pipeline.ReaderStatus
 ---@field stderr atlas.impl.StderrCollector
----@field process_handles table<integer, any>
+---@field process_handles table<integer, uv_process_t>
 ---@field pipeline_output_pending string
 ---@field pipeline_output_parser fun(context: atlas.pipeline.RunningContext, data: string):string
 ---@field pipeline_result atlas.pipeline.Result
@@ -53,16 +53,19 @@ end
 
 function RunningContext:interrupt()
     for _, handle in pairs(self.process_handles) do
-        handle:kill()
+        handle:kill("sigterm")
     end
 end
 
 ---@return atlas.impl.StderrCollector
 local function stderr_collector()
     local pipes = vim.loop.pipe()
+    assert(pipes)
+
     local output = buffer.new()
 
     local wrapper = vim.loop.new_pipe()
+    assert(wrapper)
 
     local function reader(err, data)
         if err then
@@ -90,6 +93,8 @@ end
 ---@param pipe_fd any
 local function results_collector(context, pipe_fd)
     local wrap = vim.loop.new_pipe()
+    assert(wrap)
+
     wrap:open(pipe_fd)
     wrap:read_start(function(err, data)
         if err then
@@ -260,6 +265,7 @@ function M.run(config, pipeline, on_success, on_error)
 
     for _, command in ipairs(pipeline.commands) do
         local stdio_pipe = vim.loop.pipe()
+        assert(stdio_pipe)
 
         local spawn_args = {
             args = vim.list_slice(command, 2),

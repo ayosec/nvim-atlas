@@ -8,7 +8,7 @@ local ERROR_NS = vim.api.nvim_create_namespace("Atlas/ErrorMessages")
 ---@field window integer
 ---@field bufnr integer
 ---@field filename string|nil
----@field results_watcher any
+---@field results_watcher number
 
 ---@param filename? string
 ---@param filesize_limit_mb integer
@@ -48,7 +48,7 @@ local function buf_create(filename, filesize_limit_mb)
         }
 
         -- Remove 'a' from &cpo to avoid creating buffers with `:read`.
-        local cpo_a = vim.opt.cpoptions:get().a
+        local cpo_a = vim.opt.cpoptions:get()["a"]
         if cpo_a then
             vim.opt.cpoptions:remove("a")
         end
