@@ -242,8 +242,8 @@ local function walk_tree(config, tree, git_stats, line_number_width, items, line
         if git_stats and type(key) == "string" then
             local diff = git_stats.files[item.path]
             if diff then
-                local added = string.format("+%d", diff.added)
-                local removed = string.format("-%d", diff.removed)
+                local added = diff.added > 0 and string.format("+%d", diff.added) or ""
+                local removed = diff.removed > 0 and string.format("-%d", diff.removed) or ""
 
                 row_text["010diff"] = {
                     { string.rep(" ", git_stats.added_width - #added + 1), "None" },
