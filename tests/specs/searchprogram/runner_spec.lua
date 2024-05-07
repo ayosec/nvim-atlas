@@ -217,6 +217,26 @@ describe("Pipeline Runner", function()
         assert_eq(rx(), "")
     end)
 
+    it("filenames with content", function()
+        local tx, rx = testutils.oneshot()
+
+        local specs = Filter.parse("opt !?IR_ADD ?REF_FIRST =?ins++)")
+        local program = SearchProgram.build(specs, config)
+
+        Runner.run(config, program, function(result)
+            local items = result.items
+
+            assert_eq(#items, 1)
+            assert_eq(items[1].file, "src/lj_opt_loop.c")
+
+            tx("")
+        end, function(stderr)
+            tx("on_error invoked with " .. vim.inspect(stderr))
+        end)
+
+        assert_eq(rx(), "")
+    end)
+
     it("can collect errors from the pipeline", function()
         local tx, rx = testutils.oneshot()
 

@@ -4,6 +4,7 @@ local M = {}
 M.FilterKind = {
     Simple = 1,
     FileContents = 2,
+    FileNameWithContents = 3,
 }
 
 --- Represent a specifier in a filter.
@@ -84,6 +85,9 @@ function M.parse(filter)
 
         if vim.startswith(token.value, "/") then
             new_spec.kind = M.FilterKind.FileContents
+            new_spec.value = token.value:sub(2)
+        elseif vim.startswith(token.value, "?") then
+            new_spec.kind = M.FilterKind.FileNameWithContents
             new_spec.value = token.value:sub(2)
         else
             new_spec.value = token.value

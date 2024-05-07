@@ -201,6 +201,7 @@ function M.build(specs, config)
 
     local content_filters = {} ---@type atlas.filter.Spec[]
     local exclude_content_filters = {} ---@type atlas.filter.Spec[]
+    local filenames_content_filters = {} ---@type atlas.filter.Spec[]
     local exclude_command = nil ---@type nil|string[]
 
     for _, spec in ipairs(specs) do
@@ -230,9 +231,38 @@ function M.build(specs, config)
             else
                 table.insert(content_filters, spec)
             end
+        elseif spec.kind == FilterKind.FileNameWithContents then
+            table.insert(filenames_content_filters, spec)
         else
             error("Invalid spec: " .. vim.inspect(spec))
         end
+    end
+
+    -- Filters by content but return just filenames.
+    for _, spec in ipairs(filenames_content_filters) do
+        local cmd = {
+            config.programs.xargs,
+            "--null",
+            config.programs.ripgrep,
+            case_sensitivity_argument(config),
+            "--no-config",
+            "--no-messages",
+            "--null",
+            "--regexp",
+            spec.value,
+        }
+
+        if spec.fixed_string then
+            table.insert(cmd, "--fixed-strings")
+        end
+
+        if spec.exclude then
+            table.insert(cmd, "--files-without-match")
+        else
+            table.insert(cmd, "--files-with-matches")
+        end
+
+        table.insert(filelist_commands, cmd)
     end
 
     -- If there are `exclude_content_filters`, but no `content_filters`, the
