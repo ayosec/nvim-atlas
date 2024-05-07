@@ -14,7 +14,15 @@ function utils.assert_list_contains(target, items)
     end
 
     for _, item in ipairs(items) do
-        if not vim.tbl_contains(target, item) then
+        local found = false
+        for _, other in pairs(target) do
+            if vim.deep_equal(item, other) then
+                found = true
+                break
+            end
+        end
+
+        if not found then
             error("Missing " .. vim.inspect(item) .. " in " .. vim.inspect(target))
         end
     end

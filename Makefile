@@ -7,7 +7,9 @@ test:
 
 .PHONY: lint
 lint:
-	luacheck lua tests --globals a vim
+	luacheck lua tests \
+	  --max-comment-line-length 200 \
+	  --globals a vim
 
 .PHONY: fmt
 fmt:

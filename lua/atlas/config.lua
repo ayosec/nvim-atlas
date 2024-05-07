@@ -22,9 +22,17 @@ function M.defaults()
             ---@type string
             git = vim.fn.exepath("git"),
 
+            --- Path to execute the `git` program.
+            ---@type string
+            mkfifo = vim.fn.exepath("mkfifo"),
+
             --- Path to execute the `rg` program.
             ---@type string
             ripgrep = vim.fn.exepath("rg"),
+
+            --- Path to execute the `tee` program.
+            ---@type string
+            tee = vim.fn.exepath("tee"),
 
             --- Path to execute the `xargs` program.
             ---@type string
@@ -34,7 +42,7 @@ function M.defaults()
         search = {
             --- Maximum number of results in a single search.
             ---@type integer
-            max_results = 100,
+            max_results = 200,
 
             --- Time, in milliseconds, after the last change in the prompt to
             --- run the search.

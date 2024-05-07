@@ -3,9 +3,9 @@ local M = {}
 local BufData = require("atlas.view.bufdata")
 local Errors = require("atlas.view.errors")
 local Filter = require("atlas.filter")
-local Pipeline = require("atlas.pipeline")
 local Results = require("atlas.view.results")
-local Runner = require("atlas.pipeline.runner")
+local Runner = require("atlas.searchprogram.runner")
+local SearchProgram = require("atlas.searchprogram")
 local Tree = require("atlas.view.tree")
 
 ---@return atlas.filter.Spec[]
@@ -16,7 +16,7 @@ local function parse_prompt(bufnr)
 end
 
 ---@param finder atlas.Finder
----@param result? atlas.pipeline.Result
+---@param result? atlas.searchprogram.ProgramOutput
 local function render_results(finder, result)
     Errors.hide(finder)
 
@@ -78,28 +78,28 @@ local function process(finder)
 
     -- Assign a unique id to ignore results from previous runs, if they
     -- are received after the results from newer runs.
-    local run_id = os.time()
+    local run_id = vim.loop.now()
     finder.state.last_run_id = run_id
 
-    -- Interrupt previous pipeline, if any.
-    if finder.state.last_pipeline_run then
-        finder.state.last_pipeline_run:interrupt()
+    -- Interrupt previous program, if any.
+    if finder.state.last_program then
+        finder.state.last_program:interrupt()
     end
 
-    -- Run the new pipeline.
+    -- Run the new program.
     local config = finder.view.config
-    local pipeline = Pipeline.build(filter, config)
-    local run = Runner.run(config, pipeline, function(results)
+    local program = SearchProgram.build(filter, config)
+    local run = Runner.run(config, program, function(results)
         if finder.state.last_run_id == run_id then
             render_results(finder, results)
-            finder.state.last_pipeline_run = nil
+            finder.state.last_program = nil
         end
     end, function(stderr)
         if finder.state.last_run_id ~= run_id then
             return
         end
 
-        finder.state.last_pipeline_run = nil
+        finder.state.last_program = nil
 
         if stderr == "" then
             render_results(finder, nil)
@@ -109,7 +109,7 @@ local function process(finder)
         Errors.show(finder, stderr)
     end)
 
-    finder.state.last_pipeline_run = run
+    finder.state.last_program = run
 end
 
 ---@param finder atlas.Finder
@@ -137,9 +137,9 @@ function M.interrupt(finder)
         state.update_wait_timer = nil
     end
 
-    if state.last_pipeline_run then
-        state.last_pipeline_run:interrupt()
-        state.last_pipeline_run = nil
+    if state.last_program then
+        state.last_program:interrupt()
+        state.last_program = nil
     end
 end
 

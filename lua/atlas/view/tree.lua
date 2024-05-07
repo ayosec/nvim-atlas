@@ -94,7 +94,7 @@ end
 
 ---@param parent atlas.view.Tree
 ---@param parent_path string
----@param result atlas.pipeline.ResultItem
+---@param result atlas.searchprogram.ResultItem
 local function append_node(parent, parent_path, result)
     local relative_path = result.file
 
@@ -199,7 +199,7 @@ end
 
 --- Build a tree from the results of a search pipeline.
 ---
----@param result atlas.pipeline.Result
+---@param result atlas.searchprogram.ProgramOutput
 ---@return atlas.view.Tree
 function M.build(result)
     ---@type atlas.view.Tree

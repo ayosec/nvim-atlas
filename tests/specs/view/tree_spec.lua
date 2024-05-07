@@ -40,7 +40,7 @@ end
 
 describe("UI Tree", function()
     it("build a tree with a single result", function()
-        ---@type atlas.pipeline.ResultItem[]
+        ---@type atlas.searchprogram.ResultItem[]
         local results = {
             items = { { file = "a/b/c/d/1" } },
             max_line_number = 1,
@@ -53,7 +53,7 @@ describe("UI Tree", function()
     end)
 
     it("build a tree only with filenames", function()
-        ---@type atlas.pipeline.ResultItem[]
+        ---@type atlas.searchprogram.ResultItem[]
         local items = {
             { file = "a/b/c/d/1" },
             { file = "a/b/c/d/2" },
@@ -114,7 +114,7 @@ describe("UI Tree", function()
     end)
 
     it("build a tree with file matches", function()
-        ---@type atlas.pipeline.ResultItem[]
+        ---@type atlas.searchprogram.ResultItem[]
         local items = {
             { file = "a/b/1", line = 10, text = "x0" },
             { file = "a/b/2", line = 15, text = "x1" },

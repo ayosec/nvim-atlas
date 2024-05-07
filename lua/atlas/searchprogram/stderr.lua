@@ -2,12 +2,12 @@ local M = {}
 
 local buffer = require("string.buffer")
 
----@class atlas.pipeline.StderrCollector
+---@class atlas.searchprogram.StderrCollector
 ---@field fd_write integer
 ---@field handle_reader uv_pipe_t
 ---@field buffer string.buffer
 
----@class atlas.pipeline.StderrCollector
+---@class atlas.searchprogram.StderrCollector
 local StderrCollector = {}
 
 --- Return the received data.
@@ -25,7 +25,7 @@ function StderrCollector:close_write()
     self.fd_write = -1000
 end
 
----@return atlas.pipeline.StderrCollector
+---@return atlas.searchprogram.StderrCollector
 function M.collector()
     local pipes = vim.loop.pipe()
     assert(pipes)

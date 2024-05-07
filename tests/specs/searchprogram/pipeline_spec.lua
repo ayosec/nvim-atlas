@@ -1,5 +1,5 @@
-local Commands = require("atlas.pipeline.commands")
-local Stderr = require("atlas.pipeline.stderr")
+local Pipeline = require("atlas.searchprogram.pipeline")
+local Stderr = require("atlas.searchprogram.stderr")
 
 local testutils = require("tests.utils")
 
@@ -11,7 +11,7 @@ describe("Pipeline Commands", function()
         local tx, rx = testutils.oneshot()
         local output = ""
 
-        local run = Commands.run {
+        local run = Pipeline.run {
             commands = { { "sh", "-c", "echo A\necho B" } },
 
             on_data = function(_, data)
@@ -36,7 +36,7 @@ describe("Pipeline Commands", function()
         local stderr = Stderr.collector()
         local echo = { "sh", "-c", "printf AB 1>&2" }
 
-        local run = Commands.run {
+        local run = Pipeline.run {
             commands = { echo, echo },
             stderr = stderr,
 
@@ -61,7 +61,7 @@ describe("Pipeline Commands", function()
         local output = ""
         local tx, rx = testutils.oneshot()
 
-        local run = Commands.run {
+        local run = Pipeline.run {
             open_stdin = true,
             commands = {
                 { "tr", "a-z", "A-Z" },
@@ -94,7 +94,7 @@ describe("Pipeline Commands", function()
     it("interrupt a pipeline", function()
         local tx, rx = testutils.oneshot()
 
-        local run = Commands.run {
+        local run = Pipeline.run {
             commands = {
                 { "sleep", "100" },
                 { "cat" },

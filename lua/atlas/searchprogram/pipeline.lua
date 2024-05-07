@@ -1,31 +1,54 @@
 local M = {}
 
----@class atlas.pipeline.RunningCommands
+local FIFOStdinMark = require("atlas.searchprogram").FIFOStdinMark
+
+local LAST_PIPELINE_ID = vim.loop.now()
+
+---@enum atlas.searchprogram.PipelineRole
+M.PipelineRole = {
+    Match = "M",
+    Exclude = "E",
+}
+
+---@class atlas.searchprogram.Pipeline
+---@field id integer
+---@field role nil|atlas.searchprogram.PipelineRole
 ---@field active integer
 ---@field process_handles table<integer, uv_process_t>
----@field stdin? uv_pipe_t
+---@field stdin nil|uv_pipe_t
 ---@field stdout uv_pipe_t
 
----@class atlas.pipeline.RunningCommands
-local RunningCommands = {}
+---@class atlas.searchprogram.Pipeline
+local Pipeline = {}
 
 --- Kill active processes in the pipeline.
-function RunningCommands:interrupt()
+function Pipeline:interrupt()
     for _, handle in pairs(self.process_handles) do
         handle:kill("sigterm")
     end
+
+    if self.stdin and not self.stdin:is_closing() then
+        self.stdin:close()
+    end
+
+    if not self.stdout:is_closing() then
+        self.stdout:close()
+    end
 end
 
----@class atlas.pipeline.RunningCommandsArgs
----@field workdir? string
----@field commands string[][]
----@field stderr? atlas.pipeline.StderrCollector
----@field open_stdin? boolean
----@field on_exit fun(rc: atlas.pipeline.RunningCommands, pid: integer, success: boolean)
----@field on_data fun(rc: atlas.pipeline.RunningCommands, data: string)
+---@alias atlas.searchprogram.Command string[][]
 
----@param run atlas.pipeline.RunningCommands
----@param args atlas.pipeline.RunningCommandsArgs
+---@class atlas.searchprogram.RunPipelineArgs
+---@field role nil|atlas.searchprogram.PipelineRole
+---@field workdir? string
+---@field commands atlas.searchprogram.Command
+---@field stderr? atlas.searchprogram.StderrCollector
+---@field open_stdin? boolean
+---@field on_exit fun(pl: atlas.searchprogram.Pipeline, pid: integer, success: boolean)
+---@field on_data fun(pl: atlas.searchprogram.Pipeline, data: string)
+
+---@param run atlas.searchprogram.Pipeline
+---@param args atlas.searchprogram.RunPipelineArgs
 ---@param pid integer
 ---@param success boolean
 local function handle_exit(run, args, pid, success)
@@ -42,14 +65,18 @@ end
 
 --- Run the commands for a new pipeline.
 ---
----@param args atlas.pipeline.RunningCommandsArgs
----@return atlas.pipeline.RunningCommands
+---@param args atlas.searchprogram.RunPipelineArgs
+---@return atlas.searchprogram.Pipeline
 function M.run(args)
     local main_stdout = vim.loop.new_pipe()
     assert(main_stdout)
 
-    ---@type atlas.pipeline.RunningCommands
+    LAST_PIPELINE_ID = LAST_PIPELINE_ID + 1
+
+    ---@type atlas.searchprogram.Pipeline
     local run = {
+        id = LAST_PIPELINE_ID,
+        role = args.role,
         active = 0,
         process_handles = {},
         stdout = main_stdout,
@@ -68,6 +95,16 @@ function M.run(args)
         assert(pipe)
         pipe:open(fds.write)
         run.stdin = pipe
+    end
+
+    -- If the first command is FIFOStdinMark, delete it from the list
+    -- and open the linked FIFO. The path will be removed when the process
+    -- is finished.
+    local stdin_fifo_path = nil
+    if #args.commands > 0 and args.commands[1][1] == FIFOStdinMark then
+        stdin_fifo_path = args.commands[1][2]
+        table.remove(args.commands, 1)
+        last_pipe_fd = vim.loop.fs_open(stdin_fifo_path, "r", 0)
     end
 
     -- Run commands.
@@ -90,6 +127,11 @@ function M.run(args)
         local handle, pid
         handle, pid = vim.loop.spawn(command[1], spawn_args, function(code, signal)
             handle_exit(run, args, pid, code == 0 and signal == 0)
+
+            if stdin_fifo_path then
+                vim.loop.fs_unlink(stdin_fifo_path, function() end)
+                stdin_fifo_path = nil
+            end
         end)
 
         run.active = run.active + 1
@@ -119,7 +161,7 @@ function M.run(args)
         args.on_data(run, data)
     end)
 
-    return setmetatable(run, { __index = RunningCommands })
+    return setmetatable(run, { __index = Pipeline })
 end
 
 return M
