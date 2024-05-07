@@ -43,14 +43,26 @@ function M.configure_buffer(bufnr)
     vim.api.nvim_buf_set_name(bufnr, "Atlas Finder")
     vim.bo[bufnr].filetype = "AtlasPrompt"
 
+    local function fragment(group, prefix)
+        vim.cmd.syntax(
+            "region",
+            group,
+            string.format([[start=/\M%s/]], vim.fn.escape(prefix, "/")),
+            [[skip=/\\\s/]],
+            [[end=/\s/]]
+        )
+    end
+
     vim.api.nvim_buf_call(bufnr, function()
         -- Define first to set lowest priority.
-        vim.cmd.syntax("match", "AtlasPromptItemOther", [[/\S\+/]])
+        fragment("AtlasPromptItemOther", "\\S")
 
-        vim.cmd.syntax("match", "AtlasPromptItemExclude", [[/\!/]])
+        vim.cmd.syntax("match", "AtlasPromptItemExclude", [[=\!=]])
         vim.cmd.syntax("match", "AtlasPromptItemFixedString", [[/=/]])
 
-        vim.cmd.syntax("match", "AtlasPromptItemRegex", [[=/\S\+=]])
+        fragment("AtlasPromptItemRegex", "/")
+        fragment("AtlasPromptItemQuestionRegex", "?")
+
         vim.cmd.syntax("match", "AtlasPromptItemRegex", [[=//.\+=]])
     end)
 end

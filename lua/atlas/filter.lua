@@ -34,7 +34,7 @@ local function lexer(filter)
             return nil
         end
 
-        local current
+        local current = ""
         local exclude = false
         local fixed_string = false
 
@@ -54,8 +54,29 @@ local function lexer(filter)
             current = input:sub(2)
             input = ""
         else
-            current = input:match("%S+") or ""
-            input = input:sub(#current + 2)
+            while input ~= "" do
+                local fragment = input:match("%S+") or ""
+                current = current .. fragment
+                input = input:sub(#fragment + 1)
+
+                if input == "" then
+                    break
+                end
+
+                -- Extend the specifier if it ends in a `\`
+                if vim.endswith(fragment, "\\") then
+                    current = current:sub(1, -2) .. input:sub(1, 1)
+                    input = input:sub(2)
+                else
+                    input = input:sub(2)
+                    break
+                end
+            end
+        end
+
+        -- Remove trailing backslash, except for fixed-strings.
+        if vim.endswith(current, "\\") and not fixed_string then
+            current = current:sub(1, -2)
         end
 
         return {

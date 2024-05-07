@@ -130,4 +130,37 @@ describe("Filter Parser", function()
 
         assert_eq(#specs, 4)
     end)
+
+    it("trailing backslash", function()
+        local specs = filter.parse([[foo\ bar /aaa\ bbbb =/xy\ z\ 000 !?abc\]])
+        assert_eq(specs[1].kind, filter.FilterKind.Simple)
+        assert_eq(specs[1].exclude, false)
+        assert_eq(specs[1].fixed_string, false)
+        assert_eq(specs[1].value, "foo bar")
+
+        assert_eq(specs[2].kind, filter.FilterKind.FileContents)
+        assert_eq(specs[2].exclude, false)
+        assert_eq(specs[2].fixed_string, false)
+        assert_eq(specs[2].value, "aaa bbbb")
+
+        assert_eq(specs[3].kind, filter.FilterKind.FileContents)
+        assert_eq(specs[3].exclude, false)
+        assert_eq(specs[3].fixed_string, true)
+        assert_eq(specs[3].value, "xy z 000")
+
+        assert_eq(specs[4].kind, filter.FilterKind.FileNameWithContents)
+        assert_eq(specs[4].exclude, true)
+        assert_eq(specs[4].fixed_string, false)
+        assert_eq(specs[4].value, "abc")
+
+        assert_eq(#specs, 4)
+
+        specs = filter.parse([[=abc\]])
+        assert_eq(specs[1].kind, filter.FilterKind.Simple)
+        assert_eq(specs[1].exclude, false)
+        assert_eq(specs[1].fixed_string, true)
+        assert_eq(specs[1].value, "abc\\")
+
+        assert_eq(#specs, 1)
+    end)
 end)

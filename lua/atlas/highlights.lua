@@ -22,6 +22,7 @@ function M.set_defaults()
     links {
         AtlasPromptItemExclude = "Operator",
         AtlasPromptItemFixedString = "Operator",
+        AtlasPromptItemQuestionRegex = "Identifier",
         AtlasPromptItemRegex = "String",
         AtlasPromptItemSource = "Identifier",
         AtlasPromptPrefix = "Identifier",
