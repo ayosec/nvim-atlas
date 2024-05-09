@@ -80,25 +80,6 @@ end
 
 ---@return table<string[], atlas.sources.Source[]>
 function M.default_sources()
-    local function get_oldfiles(cwd)
-        local files = {}
-
-        if cwd == "" or cwd:sub(-2, -2) ~= "/" then
-            cwd = cwd .. "/"
-        end
-
-        for _, file in ipairs(vim.v.oldfiles) do
-            if vim.startswith(file, cwd) and vim.fn.filereadable(file) == 1 then
-                table.insert(files, file:sub(#cwd + 1))
-            end
-        end
-
-        return {
-            search_dir = cwd,
-            files = files,
-        }
-    end
-
     local function get_search_dir(req)
         local search_dir = req.finder.view.config.files.search_dir
         return search_dir and search_dir() or vim.fn.getcwd()
@@ -108,51 +89,21 @@ function M.default_sources()
         [{ "b", "buffers" }] = {
             help = "Open buffers",
             handler = function(_)
-                local files = {}
-                for _, bufnr in pairs(vim.api.nvim_list_bufs()) do
-                    if vim.api.nvim_buf_is_loaded(bufnr) then
-                        local filename = vim.api.nvim_buf_get_name(bufnr)
-                        if vim.fn.filereadable(filename) == 1 then
-                            filename = filename:gsub("^/", "")
-                            table.insert(files, filename)
-                        end
-                    end
-                end
+                return require("atlas.sources.vim").buffers()
+            end,
+        },
 
-                return {
-                    search_dir = "/",
-                    files = files,
-                }
+        [{ "d", "diagnostics" }] = {
+            help = "Show diagnostics.",
+            handler = function(_)
+                return require("atlas.sources.diagnostics").diagnostics()
             end,
         },
 
         [{ "g", "gitdiff" }] = {
             help = "Files with changes in a git repository.",
             handler = function(req)
-                local cwd = get_search_dir(req)
-                local rev
-
-                -- The source argument is used to use a specific revision
-                -- to compare.
-
-                local argument = req.argument
-                if argument and argument ~= "" then
-                    if vim.startswith(argument, "~") then
-                        argument = "@" .. argument
-                    end
-
-                    rev = { argument }
-                else
-                    rev = req.finder.view.config.files.git.diff_arguments
-                end
-
-                return {
-                    search_dir = cwd,
-                    filelist_command = vim.list_extend(
-                        vim.list_extend({ "git", "diff", "--name-only", "-z" }, rev),
-                        { "--", cwd }
-                    ),
-                }
+                return require("atlas.sources.git").gitdiff(req.finder, req.argument, get_search_dir(req))
             end,
         },
 
@@ -167,17 +118,24 @@ function M.default_sources()
             end,
         },
 
+        [{ "m", "marks" }] = {
+            help = "Marks, both global and local.",
+            handler = function(req)
+                return require("atlas.sources.vim").marks(get_search_dir(req))
+            end,
+        },
+
         [{ "o", "oldfiles" }] = {
             help = "Oldfiles in the current directory.",
             handler = function(req)
-                return get_oldfiles(get_search_dir(req))
+                return require("atlas.sources.oldfiles").get_oldfiles(get_search_dir(req))
             end,
         },
 
         [{ "O", "alloldfiles" }] = {
             help = "Oldfiles in any directory.",
             handler = function(_)
-                return get_oldfiles("")
+                return require("atlas.sources.oldfiles").get_oldfiles("")
             end,
         },
     }

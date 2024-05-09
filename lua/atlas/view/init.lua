@@ -22,6 +22,7 @@ M.ItemKind = {
 ---@field line? integer
 ---@field text? string
 ---@field highlights? integer[][]
+---@field main_highlight_group? string
 
 ---@class atlas.view.Instance
 ---@field config atlas.Config

@@ -156,6 +156,7 @@ local function append_node(parent, parent_path, result)
             text = result.text,
             highlights = result.highlights,
             children = {},
+            main_highlight_group = result.main_highlight_group,
         }
     end
 
@@ -185,6 +186,7 @@ local function append_node(parent, parent_path, result)
             file_node.line = result.line
             file_node.text = result.text
             file_node.highlights = result.highlights
+            file_node.main_highlight_group = result.main_highlight_group
         else
             -- Node with other matches.
             --

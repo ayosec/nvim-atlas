@@ -1,6 +1,7 @@
 local M = {}
 
 local BufData = require("atlas.view.bufdata")
+local DirectSearch = require("atlas.directsearch")
 local Errors = require("atlas.view.errors")
 local Filter = require("atlas.filter")
 local Results = require("atlas.view.results")
@@ -93,7 +94,7 @@ local function process(finder)
         source = Sources.run(finder, filter.source_name, filter.source_argument)
     end
 
-    -- If the source returns a list of items, and there are no other filters,
+    -- If the source returns a list of files, and there are no other filters,
     -- build the results directly from that list.
     if source and source.files and vim.tbl_isempty(filter.specs) then
         local items = {}
@@ -110,6 +111,15 @@ local function process(finder)
 
         render_results(finder, results)
         return
+    end
+
+    -- If the source returns a list of items, use direct search.
+    if source then
+        local ds_output = DirectSearch.try_search(filter, source)
+        if ds_output then
+            render_results(finder, ds_output)
+            return
+        end
     end
 
     -- Run the new program.

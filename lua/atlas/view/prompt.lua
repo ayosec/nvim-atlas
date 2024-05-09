@@ -81,8 +81,6 @@ end
 ---
 ---@param bufnr integer
 function M.configure_buffer(bufnr)
-    vim.api.nvim_buf_set_name(bufnr, "Atlas Finder")
-
     local bo = vim.bo[bufnr]
     bo.filetype = "AtlasPrompt"
     bo.omnifunc = "v:lua.vim.b.AtlasOmnifunc"

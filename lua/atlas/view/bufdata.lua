@@ -71,17 +71,14 @@ local function render_text_column(item)
     local text = item.text
     local highlights = item.highlights
 
+    local main_hl_group = item.main_highlight_group or "AtlasResultsMatchText"
+
     if not text then
         return {}
     end
 
     if highlights == nil or #highlights == 0 then
-        return {
-            {
-                vim.trim(text),
-                "AtlasResultsMatchText",
-            },
-        }
+        return { { vim.trim(text), main_hl_group } }
     end
 
     -- Compute how many spaces are at the beginning. Offsets must
@@ -106,10 +103,7 @@ local function render_text_column(item)
         local end_ = highlight[2] - start_offset
 
         if start > 1 then
-            table.insert(chunks, {
-                text:sub(1, start - 1),
-                "AtlasResultsMatchText",
-            })
+            table.insert(chunks, { text:sub(1, start - 1), main_hl_group })
         end
 
         table.insert(chunks, {
@@ -122,10 +116,7 @@ local function render_text_column(item)
     end
 
     if #text > 0 then
-        table.insert(chunks, {
-            text,
-            "AtlasResultsMatchText",
-        })
+        table.insert(chunks, { text, main_hl_group })
     end
 
     return chunks

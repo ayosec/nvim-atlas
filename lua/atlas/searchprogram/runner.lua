@@ -14,6 +14,7 @@ local M = {}
 ---@field line? integer
 ---@field text? string
 ---@field highlights? integer[][]
+---@field main_highlight_group? string
 
 ---@class atlas.searchprogram.ContentMatch
 ---@field item atlas.searchprogram.ResultItem
