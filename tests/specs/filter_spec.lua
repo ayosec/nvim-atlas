@@ -171,7 +171,7 @@ describe("Filter Parser", function()
 
         f = filter.parse([[@foo:1\ 2 /bar]])
         assert_eq("foo", f.source_name)
-        assert_eq("1 2", f.source_argument)
+        assert_eq(":1 2", f.source_argument)
         assert_eq("bar", f.specs[1].value)
         assert_eq(filter.FilterKind.FileContents, f.specs[1].kind)
     end)

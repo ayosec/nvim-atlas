@@ -95,8 +95,8 @@ function M.default_sources()
 
         [{ "d", "diagnostics" }] = {
             help = "Show diagnostics.",
-            handler = function(_)
-                return require("atlas.sources.diagnostics").diagnostics()
+            handler = function(req)
+                return require("atlas.sources.diagnostics").diagnostics(req.argument)
             end,
         },
 

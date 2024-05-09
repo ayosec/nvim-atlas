@@ -127,9 +127,12 @@ function M.parse(filter)
             end
 
             source_name = token.value:sub(2)
-            local sep = source_name:find(":")
+
+            -- If the name includes a non-letter character, it will be
+            -- the start of the its argument.
+            local sep = source_name:find("%A")
             if sep then
-                source_argument = source_name:sub(sep + 1)
+                source_argument = source_name:sub(sep)
                 source_name = source_name:sub(1, sep - 1)
             end
         else

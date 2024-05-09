@@ -1,15 +1,36 @@
 local M = {}
 
+local MESSAGES_PREFIX = require("atlas.view.errors").MESSAGES_PREFIX
+
 local SEVERITY_LABELS = { "Error", "Warn", "Info", "Hint" }
 
+---@param argument string?
 ---@return atlas.sources.Response
-function M.diagnostics()
+function M.diagnostics(argument)
     ---@type atlas.searchprogram.ResultItem[]
     local items = {}
 
+    local opts = {}
+
+    if argument == "?" then
+        opts.severity = vim.diagnostic.severity.WARN
+    elseif argument == "!" then
+        opts.severity = vim.diagnostic.severity.ERROR
+    elseif argument ~= nil then
+        error(MESSAGES_PREFIX .. "Invalid argument: " .. vim.inspect(argument))
+    end
+
+    local diagnostics = vim.diagnostic.get(nil, opts)
+
+    table.sort(diagnostics, function(a, b)
+        -- If there are multiple diagnostics in the same line,
+        -- higher severity should have more priority.
+        return b.severity < a.severity
+    end)
+
     local bufnames = {}
 
-    for _, diagnostic in ipairs(vim.diagnostic.get()) do
+    for _, diagnostic in ipairs(diagnostics) do
         local bufnr = diagnostic.bufnr
         local bufname = bufnames[bufnr]
 
