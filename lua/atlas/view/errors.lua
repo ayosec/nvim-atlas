@@ -2,9 +2,16 @@ local M = {}
 
 local NS = vim.api.nvim_create_namespace("Atlas/ErrorMessages")
 
+M.MESSAGES_PREFIX = "[[AtlasMessage]]"
+
 ---@param finder atlas.Finder
 ---@param message string
 function M.show(finder, message)
+    local message_prefix_sep = message:find(M.MESSAGES_PREFIX, 1, true)
+    if message_prefix_sep then
+        message = message:sub(message_prefix_sep + #M.MESSAGES_PREFIX)
+    end
+
     vim.schedule(function()
         local bufnr = finder.view.results_buffer
 

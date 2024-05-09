@@ -5,7 +5,7 @@ local assert_eq = assert.are.same
 
 describe("Filter Parser", function()
     it("simple specifiers", function()
-        local specs = filter.parse("foo bar")
+        local specs = filter.parse("foo bar").specs
 
         assert_eq(specs[1].kind, filter.FilterKind.Simple)
         assert_eq(specs[1].exclude, false)
@@ -19,7 +19,7 @@ describe("Filter Parser", function()
     end)
 
     it("ignore spaces", function()
-        local specs = filter.parse("foo   bar  ")
+        local specs = filter.parse("foo   bar  ").specs
 
         assert_eq(specs[1].value, "foo")
         assert_eq(specs[2].value, "bar")
@@ -27,7 +27,7 @@ describe("Filter Parser", function()
     end)
 
     it("find by file contents", function()
-        local specs = filter.parse("foo /bar.*\\d")
+        local specs = filter.parse("foo /bar.*\\d").specs
         assert_eq(specs[1].kind, filter.FilterKind.Simple)
         assert_eq(specs[1].exclude, false)
         assert_eq(specs[1].fixed_string, false)
@@ -42,7 +42,7 @@ describe("Filter Parser", function()
     end)
 
     it("exclude specifiers", function()
-        local specs = filter.parse("!foo !/bar")
+        local specs = filter.parse("!foo !/bar").specs
         assert_eq(specs[1].kind, filter.FilterKind.Simple)
         assert_eq(specs[1].exclude, true)
         assert_eq(specs[1].fixed_string, false)
@@ -57,7 +57,7 @@ describe("Filter Parser", function()
     end)
 
     it("rest-of-the-line (//) specifier for file contents", function()
-        local specs = filter.parse("foo //a bb ccc")
+        local specs = filter.parse("foo //a bb ccc").specs
         assert_eq(specs[1].kind, filter.FilterKind.Simple)
         assert_eq(specs[1].exclude, false)
         assert_eq(specs[1].fixed_string, false)
@@ -72,7 +72,7 @@ describe("Filter Parser", function()
     end)
 
     it("excluded // filters", function()
-        local specs = filter.parse("foo !//a bb ccc")
+        local specs = filter.parse("foo !//a bb ccc").specs
         assert_eq(specs[1].kind, filter.FilterKind.Simple)
         assert_eq(specs[1].exclude, false)
         assert_eq(specs[1].fixed_string, false)
@@ -87,7 +87,7 @@ describe("Filter Parser", function()
     end)
 
     it("fixed-string specifiers", function()
-        local specs = filter.parse("=foo =/bar !=/both")
+        local specs = filter.parse("=foo =/bar !=/both").specs
         assert_eq(specs[1].kind, filter.FilterKind.Simple)
         assert_eq(specs[1].exclude, false)
         assert_eq(specs[1].fixed_string, true)
@@ -107,7 +107,7 @@ describe("Filter Parser", function()
     end)
 
     it("files-with-content filters", function()
-        local specs = filter.parse("?red =?green !?blue !=?cyan")
+        local specs = filter.parse("?red =?green !?blue !=?cyan").specs
         assert_eq(specs[1].kind, filter.FilterKind.FileNameWithContents)
         assert_eq(specs[1].exclude, false)
         assert_eq(specs[1].fixed_string, false)
@@ -132,7 +132,7 @@ describe("Filter Parser", function()
     end)
 
     it("trailing backslash", function()
-        local specs = filter.parse([[foo\ bar /aaa\ bbbb =/xy\ z\ 000 !?abc\]])
+        local specs = filter.parse([[foo\ bar /aaa\ bbbb =/xy\ z\ 000 !?abc\]]).specs
         assert_eq(specs[1].kind, filter.FilterKind.Simple)
         assert_eq(specs[1].exclude, false)
         assert_eq(specs[1].fixed_string, false)
@@ -155,12 +155,24 @@ describe("Filter Parser", function()
 
         assert_eq(#specs, 4)
 
-        specs = filter.parse([[=abc\]])
+        specs = filter.parse([[=abc\]]).specs
         assert_eq(specs[1].kind, filter.FilterKind.Simple)
         assert_eq(specs[1].exclude, false)
         assert_eq(specs[1].fixed_string, true)
         assert_eq(specs[1].value, "abc\\")
 
         assert_eq(#specs, 1)
+    end)
+
+    it("extract sources", function()
+        local f = filter.parse("@foo bar")
+        assert_eq("foo", f.source_name)
+        assert_eq("bar", f.specs[1].value)
+
+        f = filter.parse([[@foo:1\ 2 /bar]])
+        assert_eq("foo", f.source_name)
+        assert_eq("1 2", f.source_argument)
+        assert_eq("bar", f.specs[1].value)
+        assert_eq(filter.FilterKind.FileContents, f.specs[1].kind)
     end)
 end)

@@ -36,12 +36,58 @@ local function configure_select_mode(instance)
     })
 end
 
+local function prompt_omnifunc(find_sart, base)
+    if find_sart == 1 then
+        ---@diagnostic disable-next-line:param-type-mismatch,undefined-field
+        local line = vim.fn.getline("."):sub(1, vim.fn.col(".") - 1)
+        local last_word = line:find("%S+$")
+        return (last_word or 1) - 1
+    end
+
+    if base:sub(1, 1) ~= "@" then
+        return {}
+    end
+
+    ---@type atlas.Finder
+    ---@diagnostic disable-next-line:undefined-field
+    local finder = vim.b.AtlasFinder()
+
+    ---@type { word: string, menu: string }[]
+    local completions = {}
+
+    base = base:lower()
+
+    for names, source in pairs(finder.view.config.sources) do
+        if type(names) == "string" then
+            names = { names }
+        end
+
+        for _, name in pairs(names) do
+            name = "@" .. name
+            if vim.startswith(name:lower(), base) then
+                table.insert(completions, { word = name, menu = source.help })
+            end
+        end
+    end
+
+    table.sort(completions, function(a, b)
+        return a.word:lower() < b.word:lower()
+    end)
+
+    return completions
+end
+
 --- Configure the options and the syntax for the prompt buffer.
 ---
 ---@param bufnr integer
 function M.configure_buffer(bufnr)
     vim.api.nvim_buf_set_name(bufnr, "Atlas Finder")
-    vim.bo[bufnr].filetype = "AtlasPrompt"
+
+    local bo = vim.bo[bufnr]
+    bo.filetype = "AtlasPrompt"
+    bo.omnifunc = "v:lua.vim.b.AtlasOmnifunc"
+
+    vim.b[bufnr].AtlasOmnifunc = prompt_omnifunc
 
     local function fragment(group, prefix)
         vim.cmd.syntax(
@@ -62,6 +108,7 @@ function M.configure_buffer(bufnr)
 
         fragment("AtlasPromptItemRegex", "/")
         fragment("AtlasPromptItemQuestionRegex", "?")
+        fragment("AtlasPromptItemSource", "@")
 
         vim.cmd.syntax("match", "AtlasPromptItemRegex", [[=//.\+=]])
     end)

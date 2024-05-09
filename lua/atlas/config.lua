@@ -114,6 +114,10 @@ function M.defaults()
             },
         },
 
+        --- List of sources to use with the `@` operator.
+        ---@type table<string|string[], atlas.sources.Source>
+        sources = {},
+
         --- Mappings available in the prompt view.
         ---
         --- Keys are the mode to define the mapping (`n` for Normal, `i` for

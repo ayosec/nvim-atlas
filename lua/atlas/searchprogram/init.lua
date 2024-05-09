@@ -14,9 +14,10 @@ M.FIFOStdinMark = "\0 FIFOStdinMark"
 ---
 ---@param specs atlas.filter.Spec[]
 ---@param config atlas.Config
+---@param source? atlas.sources.Response
 ---@return atlas.searchprogram.Program
-function M.build(specs, config)
-    return require("atlas.searchprogram.builder").build(specs, config)
+function M.build(specs, config, source)
+    return require("atlas.searchprogram.builder").build(specs, config, source)
 end
 
 return M

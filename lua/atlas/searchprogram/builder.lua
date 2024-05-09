@@ -7,6 +7,7 @@ local OutputKind = require("atlas.searchprogram").OutputKind
 --- Commands to apply a filter.
 ---
 ---@class atlas.searchprogram.Program
+---@field search_dir? string
 ---@field output_kind atlas.searchprogram.OutputKind
 ---@field output_commands atlas.searchprogram.Command[]
 ---@field exclude_command? string[]
@@ -165,8 +166,9 @@ end
 ---
 ---@param specs atlas.filter.Spec[]
 ---@param config atlas.Config
+---@param source? atlas.sources.Response
 ---@return atlas.searchprogram.Program
-function M.build(specs, config)
+function M.build(specs, config, source)
     ---@type atlas.searchprogram.OutputKind
     local output_kind = OutputKind.FileNames
 
@@ -178,23 +180,53 @@ function M.build(specs, config)
 
     -- If the filter is a single spec for FileContents, the pipeline is a
     -- single rg(1) command.
-    if #specs == 1 and specs[1].kind == FilterKind.FileContents then
+    if #specs == 1 and source == nil and specs[1].kind == FilterKind.FileContents then
         return specialized_single_file_contents(specs[1], config)
     end
 
     -- The first command is always to generate the file list.
-    local file_list = {
-        config.programs.ripgrep,
-        case_sensitivity_argument(config),
-        "--no-config",
-        "--no-messages",
-        "--null",
-        "--files",
-    }
+    --
+    -- Sources can define their own command, or provide a fixed list.
+    local filelist_command = nil
 
-    prepare_entrypoint(file_list, config)
+    if source then
+        if source.filelist_command then
+            filelist_command = source.filelist_command
+        elseif source.files then
+            -- Dump the paths to a file, and use it as the input of the pipeline.
 
-    table.insert(filelist_commands, file_list)
+            assert(#specs > 0)
+            local stdin = vim.fn.tempname()
+
+            local fd = io.open(stdin, "wb")
+            assert(fd)
+
+            fd:setvbuf("full")
+            for _, file in ipairs(source.files) do
+                fd:write(file, "\0")
+            end
+            fd:close()
+
+            filelist_command = { FIFOStdinMark, stdin }
+        end
+    end
+
+    if filelist_command == nil then
+        filelist_command = {
+            config.programs.ripgrep,
+            case_sensitivity_argument(config),
+            "--no-config",
+            "--no-messages",
+            "--null",
+            "--files",
+        }
+
+        prepare_entrypoint(filelist_command, config)
+    end
+
+    if filelist_command then
+        table.insert(filelist_commands, filelist_command)
+    end
 
     -- Specifiers against the file names are put before filters on file
     -- contents, so we have to keep the later on a separate list.
@@ -328,6 +360,7 @@ function M.build(specs, config)
 
     ---@type atlas.searchprogram.Program
     local program = {
+        search_dir = source and source.search_dir,
         output_kind = output_kind,
         output_commands = output_commands,
         exclude_command = exclude_command,

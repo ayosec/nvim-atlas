@@ -24,7 +24,7 @@ function M.set_defaults()
         AtlasPromptItemFixedString = "Operator",
         AtlasPromptItemQuestionRegex = "Identifier",
         AtlasPromptItemRegex = "String",
-        AtlasPromptItemSource = "Identifier",
+        AtlasPromptItemSource = "Type",
         AtlasPromptPrefix = "Identifier",
         AtlasPromptWindow = "Normal",
     }

@@ -6,9 +6,10 @@ local Filter = require("atlas.filter")
 local Results = require("atlas.view.results")
 local Runner = require("atlas.searchprogram.runner")
 local SearchProgram = require("atlas.searchprogram")
+local Sources = require("atlas.sources")
 local Tree = require("atlas.view.tree")
 
----@return atlas.filter.Spec[]
+---@return atlas.filter.Filter
 local function parse_prompt(bufnr)
     local buflines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
     local input = table.concat(buflines, "\n")
@@ -84,11 +85,36 @@ local function process(finder)
     -- Interrupt previous program, if any.
     if finder.state.last_program then
         finder.state.last_program:interrupt()
+        finder.state.last_program = nil
+    end
+
+    local source = nil
+    if filter.source_name and filter.source_name ~= "" then
+        source = Sources.run(finder, filter.source_name, filter.source_argument)
+    end
+
+    -- If the source returns a list of items, and there are no other filters,
+    -- build the results directly from that list.
+    if source and source.files and vim.tbl_isempty(filter.specs) then
+        local items = {}
+        for _, file in ipairs(source.files) do
+            table.insert(items, { file = file })
+        end
+
+        ---@type atlas.searchprogram.ProgramOutput
+        local results = {
+            items = items,
+            search_dir = source.search_dir,
+            max_line_number = 0,
+        }
+
+        render_results(finder, results)
+        return
     end
 
     -- Run the new program.
     local config = finder.view.config
-    local program = SearchProgram.build(filter, config)
+    local program = SearchProgram.build(filter.specs, config, source)
     local run = Runner.run(config, program, function(results)
         if finder.state.last_run_id == run_id then
             render_results(finder, results)

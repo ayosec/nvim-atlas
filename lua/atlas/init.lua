@@ -10,7 +10,11 @@ end
 
 ---@param opts? atlas.Config
 function M.setup(opts)
-    M.options = vim.tbl_deep_extend("force", {}, M.default_config(), opts or {})
+    local sources = {
+        sources = require("atlas.sources").default_sources(),
+    }
+
+    M.options = vim.tbl_deep_extend("force", {}, sources, M.default_config(), opts or {})
 
     require("atlas.highlights").set_defaults()
 end
@@ -247,8 +251,10 @@ function M.find(options)
     require("atlas.keymap").apply_keymap(finder, finder.view.prompt_buffer, config.mappings)
 
     -- Store the instance as a buffer variable, so it can be accessed in handlers.
-    vim.b[finder.view.results_buffer].AtlasFinder = function()
-        return finder
+    for _, bufnr in ipairs { finder.view.results_buffer, finder.view.prompt_buffer } do
+        vim.b[bufnr].AtlasFinder = function()
+            return finder
+        end
     end
 
     -- Collect git stats.

@@ -373,7 +373,7 @@ end
 ---@return atlas.searchprogram.RunningContext
 function M.run(config, program, on_success, on_error)
     ---@type string
-    local search_dir = vim.fn.fnamemodify(config.files.search_dir() or ".", ":p")
+    local search_dir = vim.fn.fnamemodify(program.search_dir or config.files.search_dir() or ".", ":p")
 
     local stderr = Stderr.collector()
 

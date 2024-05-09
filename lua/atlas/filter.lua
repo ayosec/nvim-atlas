@@ -1,5 +1,7 @@
 local M = {}
 
+local MESSAGES_PREFIX = require("atlas.view.errors").MESSAGES_PREFIX
+
 ---@enum atlas.filter.Kind
 M.FilterKind = {
     Simple = 1,
@@ -9,6 +11,11 @@ M.FilterKind = {
 
 --- Represent a specifier in a filter.
 ---
+---@class atlas.filter.Filter
+---@field source_name string?
+---@field source_argument string?
+---@field specs atlas.filter.Spec[]
+
 ---@class atlas.filter.Spec
 ---@field kind atlas.filter.Kind
 ---@field exclude boolean
@@ -90,10 +97,13 @@ end
 --- Parse a filter and return a list with each specifier.
 ---
 ---@param filter string
----@return atlas.filter.Spec[]
+---@return atlas.filter.Filter
 function M.parse(filter)
     ---@type atlas.filter.Spec[]
     local specs = {}
+
+    local source_name = nil
+    local source_argument = nil
 
     for token in lexer(filter) do
         ---@type atlas.filter.Spec
@@ -104,12 +114,24 @@ function M.parse(filter)
             value = "",
         }
 
-        if vim.startswith(token.value, "/") then
+        local char_prefix = token.value:sub(1, 1)
+        if char_prefix == "/" then
             new_spec.kind = M.FilterKind.FileContents
             new_spec.value = token.value:sub(2)
-        elseif vim.startswith(token.value, "?") then
+        elseif char_prefix == "?" then
             new_spec.kind = M.FilterKind.FileNameWithContents
             new_spec.value = token.value:sub(2)
+        elseif char_prefix == "@" then
+            if source_name ~= nil then
+                error(MESSAGES_PREFIX .. "Multiple sources defined")
+            end
+
+            source_name = token.value:sub(2)
+            local sep = source_name:find(":")
+            if sep then
+                source_argument = source_name:sub(sep + 1)
+                source_name = source_name:sub(1, sep - 1)
+            end
         else
             new_spec.value = token.value
         end
@@ -119,7 +141,11 @@ function M.parse(filter)
         end
     end
 
-    return specs
+    return {
+        source_name = source_name,
+        source_argument = source_argument,
+        specs = specs,
+    }
 end
 
 return M

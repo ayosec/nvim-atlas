@@ -17,7 +17,7 @@ describe("Pipeline Runner", function()
     it("basic filter", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("luajit.[ch]$")
+        local specs = Filter.parse("luajit.[ch]$").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -38,7 +38,7 @@ describe("Pipeline Runner", function()
     it("exclude filenames", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("ffi !a")
+        local specs = Filter.parse("ffi !a").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -59,7 +59,7 @@ describe("Pipeline Runner", function()
     it("filenames with content filter", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("_vm !event /LOG /target")
+        local specs = Filter.parse("_vm !event /LOG /target").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -82,7 +82,7 @@ describe("Pipeline Runner", function()
     it("execute a complex pipeline", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("asm.*6 !h !/xyz /req.*bit")
+        local specs = Filter.parse("asm.*6 !h !/xyz /req.*bit").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -105,7 +105,7 @@ describe("Pipeline Runner", function()
     it("multiple content filters", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("=.h /memcpy /sizeof")
+        local specs = Filter.parse("=.h /memcpy /sizeof").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -128,7 +128,7 @@ describe("Pipeline Runner", function()
     it("combine content and exclude filters", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("=.h /#define /HOOK_EVENT !/hook_save")
+        local specs = Filter.parse("=.h /#define /HOOK_EVENT !/hook_save").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -151,7 +151,7 @@ describe("Pipeline Runner", function()
     it("overlapped highlights", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("cparse /<4 /<< =/c&15) /15.* =/(cp->c")
+        local specs = Filter.parse("cparse /<4 /<< =/c&15) /15.* =/(cp->c").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -174,7 +174,7 @@ describe("Pipeline Runner", function()
     it("execute a single-filter pipeline", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("/speed.*intern")
+        local specs = Filter.parse("/speed.*intern").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -197,7 +197,7 @@ describe("Pipeline Runner", function()
     it("fixed-strings for content filters", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("=!/*J =c. =//GCtrace *T)")
+        local specs = Filter.parse("=!/*J =c. =//GCtrace *T)").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -220,7 +220,7 @@ describe("Pipeline Runner", function()
     it("filenames with content", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("opt !?IR_ADD ?REF_FIRST =?ins++)")
+        local specs = Filter.parse("opt !?IR_ADD ?REF_FIRST =?ins++)").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -240,7 +240,7 @@ describe("Pipeline Runner", function()
     it("can collect errors from the pipeline", function()
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("demo /[a-")
+        local specs = Filter.parse("demo /[a-").specs
         local program = SearchProgram.build(specs, config)
 
         Runner.run(config, program, function(result)
@@ -266,7 +266,7 @@ describe("Pipeline Runner", function()
         -- Launch the pipeline.
         local tx, rx = testutils.oneshot()
 
-        local specs = Filter.parse("/..")
+        local specs = Filter.parse("/..").specs
         local program = SearchProgram.build(specs, tmpconfig)
 
         local run = Runner.run(tmpconfig, program, function(result)
