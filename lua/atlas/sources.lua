@@ -11,6 +11,7 @@ local MESSAGES_PREFIX = require("atlas.view.errors").MESSAGES_PREFIX
 ---@field search_dir? string
 ---@field filelist_command? string[]
 ---@field files? string[]
+---@field items? atlas.searchprogram.ResultItem[]
 
 ---@alias atlas.sources.Handler fun(req: atlas.sources.Request): atlas.sources.Response
 
