@@ -61,4 +61,31 @@ function M.marks(search_dir)
     }
 end
 
+---@return atlas.sources.Response
+function M.quickfix()
+    ---@type atlas.searchprogram.ResultItem[]
+    local items = {}
+
+    local bufnames = {}
+
+    for _, qf in ipairs(vim.fn.getqflist()) do
+        local bufname = bufnames[qf.bufnr]
+        if not bufname then
+            bufname = vim.api.nvim_buf_get_name(qf.bufnr)
+            bufnames[qf.bufnr] = bufname
+        end
+
+        table.insert(items, {
+            file = bufname:sub(2),
+            line = qf.lnum,
+            text = qf.text,
+        })
+    end
+
+    return {
+        search_dir = "/",
+        items = items,
+    }
+end
+
 return M

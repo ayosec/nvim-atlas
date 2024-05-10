@@ -118,6 +118,13 @@ function M.default_sources()
             end,
         },
 
+        [{ "q", "quickfix" }] = {
+            help = "Quickfix list.",
+            handler = function(_)
+                return require("atlas.sources.vim").quickfix()
+            end,
+        },
+
         [{ "m", "marks" }] = {
             help = "Marks, both global and local.",
             handler = function(req)
