@@ -89,7 +89,7 @@ local function process(finder)
         finder.state.last_program = nil
     end
 
-    local source = nil
+    local source = finder.default_source
     if filter.source_name and filter.source_name ~= "" then
         source = Sources.run(finder, filter.source_name, filter.source_argument)
     end

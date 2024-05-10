@@ -32,6 +32,7 @@ end
 ---@field history atlas.impl.History
 ---@field marks atlas.impl.Marks
 ---@field items_index atlas.view.bufdata.ItemIndex
+---@field default_source? atlas.sources.Response
 ---@field search_dir string|nil
 ---@field help atlas.impl.Help
 ---@field original_environment atlas.impl.OriginalEnvironment
@@ -204,6 +205,7 @@ end
 ---@class atlas.FindOptions
 ---@field config? atlas.Config
 ---@field initial_prompt? string
+---@field default_source? atlas.sources.Response
 
 ---@param options? atlas.FindOptions
 ---@return atlas.Finder
@@ -228,6 +230,7 @@ function M.find(options)
         history = require("atlas.history").new_default(config.search.history_size),
         marks = { all = false, items = {} },
         items_index = {},
+        default_source = options.default_source,
         help = { keymap = {} },
         original_environment = original_environment,
         state = {},
@@ -270,6 +273,8 @@ function M.find(options)
             end
         )
     end
+
+    on_update()
 
     return finder
 end
