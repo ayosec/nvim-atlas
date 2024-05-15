@@ -17,9 +17,8 @@ local M = {}
 ---@field main_highlight_group? string
 
 ---@class atlas.searchprogram.ContentMatch
----@field item atlas.searchprogram.ResultItem
+---@field item? atlas.searchprogram.ResultItem
 ---@field match_pipelines table<integer, boolean>
----@field exclude boolean|nil
 
 ---@class atlas.searchprogram.RunningContext
 ---@field program atlas.searchprogram.Program
@@ -34,6 +33,7 @@ local M = {}
 ---@field pipeline_output_parser fun(context: atlas.searchprogram.RunningContext, pipeline: atlas.searchprogram.Pipeline, data: string): string
 ---@field program_output atlas.searchprogram.ProgramOutput
 ---@field content_matches table<string, atlas.searchprogram.ContentMatch>
+---@field content_matches_count integer
 ---@field content_exclude_line_keys string[]
 ---@field content_exclude_pipe uv_pipe_t|nil
 ---@field on_success fun(results: atlas.searchprogram.ProgramOutput)
@@ -155,10 +155,18 @@ local function insert_highlight(item, new_hls)
 end
 
 ---@param context atlas.searchprogram.RunningContext
+local function stop_reader(context)
+    for _, pipeline in pairs(context.command_pipelines) do
+        pipeline.stdout:close()
+    end
+end
+
+---@param context atlas.searchprogram.RunningContext
 ---@param pipeline atlas.searchprogram.Pipeline
 ---@param data string
 ---@return string
 local function pipeline_output_parse_json_lines(context, pipeline, data)
+    local max_results = context.max_results
     local result = context.program_output
     local offset = 1
 
@@ -207,6 +215,11 @@ local function pipeline_output_parse_json_lines(context, pipeline, data)
                 if line_number ~= nil and line_number > result.max_line_number then
                     result.max_line_number = line_number
                 end
+
+                if #result.items > max_results then
+                    stop_reader(context)
+                    break
+                end
             else
                 -- If there are multiple pipelines, track matches in a separate
                 -- table, which will be processed when all pipelines are done.
@@ -214,7 +227,7 @@ local function pipeline_output_parse_json_lines(context, pipeline, data)
                 local key = string.format("%s:%d", result_item.file, result_item.line)
                 local cm = context.content_matches[key]
                 if cm then
-                    if not cm.exclude then
+                    if cm.item then
                         cm.match_pipelines[pipeline.id] = true
                         if highlights then
                             insert_highlight(cm.item, highlights)
@@ -225,6 +238,14 @@ local function pipeline_output_parse_json_lines(context, pipeline, data)
                         item = result_item,
                         match_pipelines = { [pipeline.id] = true },
                     }
+
+                    context.content_matches_count = context.content_matches_count + 1
+
+                    -- Multiply by 32 to give margin to the exclude filters.
+                    if context.content_matches_count > max_results * 32 then
+                        stop_reader(context)
+                        break
+                    end
                 end
 
                 if context.content_exclude_pipe and text then
@@ -279,9 +300,10 @@ local function process_exclude_content_filter(context, pipeline, data)
             local line = tonumber(data:sub(offset, colon - 1))
             local key = line and context.content_exclude_line_keys[line]
             local cm = key and context.content_matches[key]
-            if cm and not cm.exclude then
-                cm.exclude = true
-                cm.item.highlights = {}
+            if cm and cm.item then
+                cm.item = nil
+                cm.match_pipelines = {}
+                context.content_matches_count = context.content_matches_count - 1
             end
         end
 
@@ -298,7 +320,7 @@ local function generate_program_output(context)
     for _, cm in pairs(context.content_matches) do
         local match_all_pipelines = false
 
-        if not cm.exclude then
+        if cm.item then
             match_all_pipelines = true
             for _, pipeline_id in ipairs(context.output_pipeline_ids) do
                 if not cm.match_pipelines[pipeline_id] then
@@ -394,6 +416,7 @@ function M.run(config, program, on_success, on_error)
             max_line_number = 0,
         },
         content_matches = {},
+        content_matches_count = 0,
         content_exclude_line_keys = {},
         on_error = on_error,
         on_success = on_success,

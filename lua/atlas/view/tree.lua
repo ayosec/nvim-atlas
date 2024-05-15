@@ -2,6 +2,36 @@ local M = {}
 
 local ResultsViewItemKind = require("atlas.view").ItemKind
 
+---@param path string
+---@return string
+local function basename(path)
+    if path == "/" then
+        return ""
+    end
+
+    local last_sep = 1
+    while true do
+        local sep = path:find("/", last_sep, true)
+        if not sep then
+            return path:sub(last_sep)
+        end
+        last_sep = sep + 1
+    end
+end
+
+---@param paths_cache table<string, string[]>
+---@param path string
+---@return string[]
+local function cached_path_components(paths_cache, path)
+    local c = paths_cache[path]
+    if c then
+        return c
+    end
+    c = vim.split(path, "/", { plain = true })
+    paths_cache[path] = c
+    return c
+end
+
 --- Find the node for the `path`. It may split an existing node if it shares
 --- a prefix with the `path`.
 ---
@@ -9,8 +39,9 @@ local ResultsViewItemKind = require("atlas.view").ItemKind
 ---@param path string
 ---@param parent_node atlas.view.Item?
 ---@param parent_shared_prefix string
+---@param paths_cache table<string, string[]>
 ---@return atlas.view.Item?
-local function find_parent_node(tree, path, parent_node, parent_shared_prefix)
+local function find_parent_node(tree, path, parent_node, parent_shared_prefix, paths_cache)
     -- If `path` is already a node of the tree, we don't need to find
     -- the shared prefix.
     if tree[path] ~= nil then
@@ -26,10 +57,10 @@ local function find_parent_node(tree, path, parent_node, parent_shared_prefix)
     for key, node in pairs(tree) do
         if type(key) == "string" then
             local shared_prefix = ""
-            local path_iter = vim.gsplit(path, "/")
+            local path_iter = cached_path_components(paths_cache, path)
 
-            for n in vim.gsplit(node.path, "/") do
-                local p = path_iter()
+            for idx, n in ipairs(cached_path_components(paths_cache, node.path)) do
+                local p = path_iter[idx]
 
                 if n ~= p or p == nil then
                     break
@@ -69,7 +100,7 @@ local function find_parent_node(tree, path, parent_node, parent_shared_prefix)
         -- in its subtree.
         local existing_node = tree[new_node_key]
         if existing_node ~= nil then
-            local node = find_parent_node(existing_node.children, path, existing_node, shared_prefix)
+            local node = find_parent_node(existing_node.children, path, existing_node, shared_prefix, paths_cache)
             assert(node)
             return node
         end
@@ -130,7 +161,7 @@ local function append_node(parent, parent_path, result)
     -- is either a kind=ContentMatch (for a single line), or a kind=File
     -- (for multiple lines, in the `children` field).
 
-    local file_node_key = vim.fs.basename(relative_path)
+    local file_node_key = basename(relative_path)
 
     ---@type atlas.view.Item
     local file_node = target[file_node_key]
@@ -207,13 +238,15 @@ function M.build(result)
     ---@type atlas.view.Tree
     local tree = {}
 
+    local paths_cache = {}
+
     for _, item in ipairs(result.items) do
         local dirname = vim.fs.dirname(item.file)
 
         local parent_tree, parent_path
 
         if dirname ~= "." then
-            local parent = find_parent_node(tree, dirname, nil, "")
+            local parent = find_parent_node(tree, dirname, nil, "", paths_cache)
             if parent ~= nil then
                 parent_tree = parent.children
                 parent_path = parent.path
