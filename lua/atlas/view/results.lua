@@ -116,10 +116,18 @@ function M.set_content(bufnr, columns_gap, lines, items)
 
     vim.api.nvim_buf_clear_namespace(bufnr, NS, 0, -1)
 
-    local column_widths = {}
+    local column_widths_text = {}
+    local column_widths_no_text = {}
     local row_select = nil
 
     for _, item in pairs(items) do
+        local column_widths
+        if item.item.text or item.item.line then
+            column_widths = column_widths_text
+        else
+            column_widths = column_widths_no_text
+        end
+
         for numcol, column in pairs(item.row_text) do
             local cw = 0
             for _, chunk in ipairs(column) do
@@ -133,6 +141,13 @@ function M.set_content(bufnr, columns_gap, lines, items)
     end
 
     for item_id, item in pairs(items) do
+        local column_widths
+        if item.item.text or item.item.line then
+            column_widths = column_widths_text
+        else
+            column_widths = column_widths_no_text
+        end
+
         local text_column = 0
         for colname, column_width in vim.spairs(column_widths) do
             local column = item.row_text[colname]
