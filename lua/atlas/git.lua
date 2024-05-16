@@ -18,17 +18,19 @@ local function parse_output(output, code, on_result)
             local added = tonumber(entry:sub(1, s1 - 1))
             local removed = tonumber(entry:sub(s1 + 1, s2 - 1))
 
-            files[entry:sub(s2 + 1)] = {
-                added = added,
-                removed = removed,
-            }
+            if added and removed then
+                files[entry:sub(s2 + 1)] = {
+                    added = added,
+                    removed = removed,
+                }
 
-            if added and added > max_added then
-                max_added = added
-            end
+                if added and added > max_added then
+                    max_added = added
+                end
 
-            if removed and removed > max_removed then
-                max_removed = removed
+                if removed and removed > max_removed then
+                    max_removed = removed
+                end
             end
         end
     end

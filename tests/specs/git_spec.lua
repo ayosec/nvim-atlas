@@ -15,10 +15,11 @@ describe("Filter Parser", function()
         vim.fn.writefile({ "1", "2" }, workdir .. "/one")
         vim.fn.writefile({ "3", "4" }, workdir .. "/two")
         vim.fn.writefile({ "5" }, workdir .. "/three")
+        vim.fn.writefile("\x01\x00", workdir .. "/x.bin")
 
         local initcmds = {
             { "init" },
-            { "add", "one", "two", "three" },
+            { "add", "one", "two", "three", "x.bin" },
             { "commit", "--message", "nothing" },
         }
 
@@ -31,6 +32,7 @@ describe("Filter Parser", function()
         vim.fn.writefile({ "1", "x" }, workdir .. "/one")
         vim.fn.writefile({ "3", "4" }, workdir .. "/two")
         vim.fn.writefile({ "5", "6", "7", "8" }, workdir .. "/three")
+        vim.fn.writefile("\x00\x01\x02", workdir .. "/x.bin")
 
         -- Get the diff stats.
         local stats = nil
@@ -53,5 +55,7 @@ describe("Filter Parser", function()
 
         assert_eq(3, stats.files["three"].added)
         assert_eq(0, stats.files["three"].removed)
+
+        assert_eq(stats.files["x.bin"], nil)
     end)
 end)
