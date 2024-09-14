@@ -37,7 +37,7 @@
         '';
 
       in {
-        formatter = pkgs.nixfmt;
+        formatter = pkgs.nixfmt-classic;
 
         devShells.default = pkgs.mkShell {
           buildInputs = with pkgs; [
