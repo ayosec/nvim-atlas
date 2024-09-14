@@ -72,6 +72,9 @@ function M.create_window(config, geometry, bufnr)
     wo.winhighlight = winhighlight
     wo.wrap = false
 
+    ---@diagnostic disable-next-line:inject-field
+    wo.winfixbuf = true
+
     if cfg.selection_mark ~= nil then
         vim.w[window].AtlasStatusColumn = function(lnum, relnum)
             local mark

@@ -126,6 +126,9 @@ function M.create_window(config, geometry, bufnr)
 
     wo.statuscolumn = "%#AtlasPromptPrefix#" .. cfg.prefix
 
+    ---@diagnostic disable-next-line:inject-field
+    wo.winfixbuf = true
+
     return window
 end
 
