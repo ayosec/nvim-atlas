@@ -94,7 +94,6 @@ function M.create_window(config, geometry, bufnr)
             return string.format("%%#%s#%s", cfg.selection_mark_highlight, mark)
         end
 
-        ---@diagnostic disable-next-line:inject-field
         wo.statuscolumn = [[%{%w:AtlasStatusColumn(v:lnum, v:relnum)%}]]
     end
 

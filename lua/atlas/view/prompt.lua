@@ -38,7 +38,6 @@ end
 
 local function prompt_omnifunc(find_sart, base)
     if find_sart == 1 then
-        ---@diagnostic disable-next-line:param-type-mismatch,undefined-field
         local line = vim.fn.getline("."):sub(1, vim.fn.col(".") - 1)
         local last_word = line:find("%S+$")
         return (last_word or 1) - 1
@@ -125,7 +124,6 @@ function M.create_window(config, geometry, bufnr)
     wo.winhighlight = "Normal:AtlasPromptWindow"
     wo.wrap = false
 
-    ---@diagnostic disable-next-line:inject-field
     wo.statuscolumn = "%#AtlasPromptPrefix#" .. cfg.prefix
 
     return window

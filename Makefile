@@ -23,7 +23,7 @@ fmt-check:
 lua-types:
 	git clone \
 	    -c advice.detachedHead=false \
-	    -b v2.5.2 \
+	    -b v3.0.0 \
 	    --depth 1 \
 	    https://github.com/folke/neodev.nvim.git \
 	    .cache/neodev
