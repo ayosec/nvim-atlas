@@ -67,7 +67,8 @@ end
 --- Open the files of current selection.
 ---
 --- If there is any running pipeline, it will be terminated.
-function FinderMeta:accept()
+---@param use_tabs boolean
+function FinderMeta:accept(use_tabs)
     local _, id = self:get_selected_item()
 
     if id then
@@ -93,9 +94,14 @@ function FinderMeta:accept()
     self:destroy(true)
 
     if #paths > 0 then
+        local mods = {}
+        if use_tabs or #paths > 1 then
+            mods.tab = vim.fn.tabpagenr()
+        end
+
         vim.cmd.drop {
             args = paths,
-            mods = { tab = vim.fn.tabpagenr() },
+            mods = mods,
         }
 
         -- Update the first window for the selected files if the
@@ -225,7 +231,6 @@ function M.find(options)
     ---@type atlas.Config
     local config = vim.tbl_deep_extend("force", {}, M.options, options.config or {})
 
-    ---@type atlas.Finder
     local finder = {
         history = require("atlas.history").new_default(config.search.history_size),
         marks = { all = false, items = {} },

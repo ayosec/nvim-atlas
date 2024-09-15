@@ -71,10 +71,13 @@ end
 --- (like `toggle_fold`).
 ---
 --- If it is a file, open the current selection.
+---@param use_tabs boolean
 ---@return atlas.KeyMapHandler
-function M.accept()
+function M.accept(use_tabs)
+    local help = "Open the selected file" .. (use_tabs and " in a new tab." or ".")
+
     return {
-        help = "Open the selected file.",
+        help = help,
         handler = function(finder)
             local selected = finder:get_selected_item()
             if not selected then
@@ -85,7 +88,7 @@ function M.accept()
                 return M.toggle_fold().handler(finder)
             end
 
-            finder:accept()
+            finder:accept(use_tabs)
         end,
     }
 end
