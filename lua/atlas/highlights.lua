@@ -33,7 +33,8 @@ function M.set_defaults()
     links {
         AtlasResultsDiffAdd = "DiffAdd",
         AtlasResultsDiffDelete = "DiffDelete",
-        AtlasResultsFold = "Comment",
+        AtlasResultsFoldText = "Normal",
+        AtlasResultsFoldSize = "Constant",
         AtlasResultsItemDirectory = "Directory",
         AtlasResultsItemFile = "Normal",
         AtlasResultsMatchHighlight = "Search",

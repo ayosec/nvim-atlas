@@ -13,13 +13,16 @@ local function foldtext(bufnr, foldstart, foldend)
         return ""
     end
 
-    local cw = 0
+    local cw = 1
     local _, firstcol = vim.spairs(item.row_text)()
     for _, chunk in pairs(firstcol) do
         cw = cw + vim.api.nvim_strwidth(chunk[1])
     end
 
-    return string.format("%s (+%d)", string.rep(" ", cw), foldend - foldstart)
+    return {
+        { string.rep(" ", cw), "Normal" },
+        { string.format("(+%d)", foldend - foldstart), "AtlasResultsFoldSize" },
+    }
 end
 
 ---@class atlas.impl.RenderState
@@ -57,7 +60,7 @@ function M.create_window(config, geometry, bufnr)
         return foldtext(bufnr, foldstart, foldend)
     end
 
-    local winhighlight = "Normal:AtlasResultsWindow,Folded:AtlasResultsFold"
+    local winhighlight = "Normal:AtlasResultsWindow,Folded:AtlasResultsFoldText"
 
     if vim.fn.hlexists("AtlasResultsCursorLine") == 1 then
         winhighlight = winhighlight .. ",CursorLine:AtlasResultsCursorLine"
