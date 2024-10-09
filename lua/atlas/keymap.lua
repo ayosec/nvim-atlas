@@ -2,6 +2,8 @@ local M = {}
 
 local actions = require("atlas.actions")
 
+local OpenMode = require("atlas").OpenMode
+
 ---@type atlas.KeyMappings
 local Default = {
     i = {
@@ -21,8 +23,9 @@ local Default = {
         ["<C-f>"] = actions.toggle_fold(),
         ["<C-p>"] = actions.toggle_preview(),
         ["<C-q>"] = actions.send_qflist(),
-        ["<C-t>"] = actions.accept(true),
-        ["<Cr>"] = actions.accept(false),
+        ["<C-t>"] = actions.accept(OpenMode.Tabs),
+        ["<C-s>"] = actions.accept(OpenMode.Split),
+        ["<Cr>"] = actions.accept(OpenMode.Auto),
         ["<Down>"] = actions.selection_go(1),
         ["<F1>"] = actions.toggle_help(),
         ["<M-Down>"] = actions.resize(-5),

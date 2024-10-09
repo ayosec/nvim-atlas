@@ -64,11 +64,18 @@ function FinderMeta:destroy(history_add)
     require("atlas.updater").interrupt(self)
 end
 
+---@enum atlas.OpenMode
+M.OpenMode = {
+    Auto = 1,
+    Tabs = 2,
+    Split = 3,
+}
+
 --- Open the files of current selection.
 ---
 --- If there is any running pipeline, it will be terminated.
----@param use_tabs boolean
-function FinderMeta:accept(use_tabs)
+---@param open_mode atlas.OpenMode
+function FinderMeta:accept(open_mode)
     local _, id = self:get_selected_item()
 
     if id then
@@ -94,15 +101,36 @@ function FinderMeta:accept(use_tabs)
     self:destroy(true)
 
     if #paths > 0 then
-        local mods = {}
-        if use_tabs or #paths > 1 then
-            mods.tab = vim.fn.tabpagenr()
-        end
+        if open_mode == M.OpenMode.Split then
+            local prev_bufnr = vim.fn.bufnr()
 
-        vim.cmd.drop {
-            args = paths,
-            mods = mods,
-        }
+            -- Open each file with `:new` to create a new split.
+            for _, path in ipairs(paths) do
+                vim.cmd.new {
+                    args = { path },
+                    mods = {
+                        horizontal = true,
+                        split = "belowright",
+                    },
+                }
+            end
+
+            -- Delete the previous buffer if it was empty.
+            local empty = not vim.bo[prev_bufnr].modified
+            if empty and vim.api.nvim_buf_get_name(prev_bufnr) == "" then
+                vim.api.nvim_buf_delete(prev_bufnr, {})
+            end
+        else
+            local mods = {}
+            if open_mode == M.OpenMode.Tabs or #paths > 1 then
+                mods.tab = vim.fn.tabpagenr()
+            end
+
+            vim.cmd.drop {
+                args = paths,
+                mods = mods,
+            }
+        end
 
         -- Update the first window for the selected files if the
         -- selected item has a line number

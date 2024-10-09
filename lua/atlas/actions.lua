@@ -71,10 +71,19 @@ end
 --- (like `toggle_fold`).
 ---
 --- If it is a file, open the current selection.
----@param use_tabs boolean
+---@param open_mode atlas.OpenMode
 ---@return atlas.KeyMapHandler
-function M.accept(use_tabs)
-    local help = "Open the selected file" .. (use_tabs and " in a new tab." or ".")
+function M.accept(open_mode)
+    local OpenMode = require("atlas").OpenMode
+    local help = "Open the selected files"
+
+    if open_mode == OpenMode.Tabs then
+        help = help .. " in a new tabs."
+    elseif open_mode == OpenMode.Split then
+        help = help .. " in horizontal splits."
+    else
+        help = help .. "."
+    end
 
     return {
         help = help,
@@ -88,7 +97,7 @@ function M.accept(use_tabs)
                 return M.toggle_fold().handler(finder)
             end
 
-            finder:accept(use_tabs)
+            finder:accept(open_mode)
         end,
     }
 end
