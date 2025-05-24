@@ -20,7 +20,12 @@ function M.references_source(callback)
     local window = vim.api.nvim_get_current_win()
     local bufnr = vim.api.nvim_get_current_buf()
 
-    local params = vim.lsp.util.make_position_params(window)
+    local client = vim.lsp.get_clients({ bufnr = bufnr })[1]
+    if not client then
+        return
+    end
+
+    local params = vim.lsp.util.make_position_params(window, client.offset_encoding)
     params.context = { includeDeclaration = true }
 
     vim.lsp.buf_request(bufnr, "textDocument/references", params, function(err, result, _, _)
