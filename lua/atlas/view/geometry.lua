@@ -12,6 +12,7 @@ local M = {}
 ---@field height integer
 ---@field relative string
 ---@field style string
+---@field border string
 
 ---@param config atlas.Config
 ---@return atlas.view.geometry.Geometry
@@ -80,6 +81,7 @@ function M.compute_ui_geometry(config)
             height = lines - 1,
             relative = "editor",
             style = "minimal",
+            border = "none",
         },
     }
 end
