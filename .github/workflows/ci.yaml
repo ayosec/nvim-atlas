@@ -16,8 +16,8 @@ jobs:
 
       matrix:
         include:
-          - nvim: v0.9.5/nvim-linux64.tar.gz
-          - nvim: nightly/nvim-linux64.tar.gz
+          - nvim: v0.12.1/nvim-linux-x86_64.tar.gz
+          - nvim: nightly/nvim-linux-x86_64.tar.gz
 
     steps:
       - uses: actions/checkout@v4
