@@ -118,7 +118,7 @@ local function create_window(bufnr, width, height)
 
     local window = vim.api.nvim_open_win(bufnr, false, opts)
 
-    local wo = vim.wo[window]
+    local wo = vim.wo[window][0]
     wo.concealcursor = "nv"
     wo.conceallevel = 2
 end

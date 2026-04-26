@@ -119,7 +119,7 @@ function M.create_window(config, geometry, bufnr)
     local cfg = config.view.prompt
 
     local window = vim.api.nvim_open_win(bufnr, true, geometry.prompt)
-    local wo = vim.wo[window]
+    local wo = vim.wo[window][0]
 
     wo.winhighlight = "Normal:AtlasPromptWindow"
     wo.wrap = false

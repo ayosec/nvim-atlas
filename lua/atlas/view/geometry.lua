@@ -105,7 +105,7 @@ function M.resize_instance(instance)
 
     for _, win in ipairs(windows) do
         if win[1] then
-            local wo = vim.wo[win[1]]
+            local wo = vim.wo[win[1]][0]
 
             -- Save options.
             local opts = {}

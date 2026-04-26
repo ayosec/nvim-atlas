@@ -102,7 +102,7 @@ local function win_config(window, item)
         has_numbers = vim.bo[bufnr].filetype ~= ""
     end
 
-    local wo = vim.wo[window]
+    local wo = vim.wo[window][0]
     wo.winhighlight = "Normal:AtlasPreviewWindow"
     wo.cursorline = cursorline
     wo.number = has_numbers

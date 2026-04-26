@@ -54,7 +54,7 @@ function M.create_window(config, geometry, bufnr)
     local cfg = config.view.results
 
     local window = vim.api.nvim_open_win(bufnr, false, geometry.results)
-    local wo = vim.wo[window]
+    local wo = vim.wo[window][0]
 
     vim.w[window].AtlasFoldText = function(foldstart, foldend)
         return foldtext(bufnr, foldstart, foldend)
