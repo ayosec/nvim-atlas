@@ -102,6 +102,58 @@ function M.accept(open_mode)
     }
 end
 
+--- Copy the selected lines to the unnamed register.
+---@return atlas.KeyMapHandler
+function M.copy_lines()
+    --- @type atlas.KeyMapHandler
+    return {
+        help = "Copy the selected lines to the unnamed register.",
+        handler = function(finder)
+            local selected = finder:get_selected_item()
+            if not selected then
+                return
+            end
+
+            local _, id = finder:get_selected_item()
+
+            if id then
+                finder.marks.items[id] = true
+            end
+
+            --- @type [number, string][]
+            local lines = {}
+
+            for item_id, marked in pairs(finder.marks.items) do
+                local item_data = finder.items_index[item_id]
+                if marked and item_data then
+                    local item = item_data.item
+                    if item.text ~= nil and item.line ~= nil then
+                        table.insert(lines, { item.line, item.text })
+                    end
+                end
+            end
+
+            table.sort(lines, function(a, b)
+                return a[1] < b[1]
+            end)
+
+            local contents = ""
+            for _, line in ipairs(lines) do
+                contents = contents .. line[2] .. "\n"
+            end
+
+            if contents == "" then
+                vim.notify("Nothing to yank.", vim.log.levels.WARN)
+                return
+            end
+
+            vim.fn.setreg('"', contents)
+
+            finder:destroy(false)
+        end,
+    }
+end
+
 --- Close all windows for this instance.
 ---@return atlas.KeyMapHandler
 function M.destroy()
