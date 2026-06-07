@@ -18,14 +18,3 @@ fmt:
 .PHONY: fmt-check
 fmt-check:
 	stylua --check lua tests
-
-.PHONY: lua-types
-lua-types:
-	git clone \
-	    -c advice.detachedHead=false \
-	    -b v3.0.0 \
-	    --depth 1 \
-	    https://github.com/folke/neodev.nvim.git \
-	    .cache/neodev
-	mv .cache/neodev/types/stable .cache/lua-types
-	rm -fr .cache/neodev

@@ -9,6 +9,6 @@
     ],
 
     "workspace.library": [
-        ".cache/lua-types"
+        "$VIMRUNTIME"
     ]
 }
